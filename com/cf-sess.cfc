@@ -94,12 +94,20 @@ component {
 				val = unsign(oldSecret, cookie.sess_sid);
 				if (val == false) {
 					//cookie exists, but is invalid session
-					request.sess_sid = listFirst(val, "|");
+					//delete existing cookie
+					writeCookie("NOW", secret);
+					//start new session
+					touchSession(genSessionID());
 				} else {
 					//cookie needs to be recreated using newSecret
-
+					//get rid of old secret cookie
+					writeCookie("NOW", oldSecret);
+					//create new secret
+					touchSession(listFirst(val, "|"));
 				}
-
+			} else {
+				//existing session was fine, just touch it
+				touchSession(listFirst(val, "|"));
 			}
 
 			//by this point we should have a session to work with
@@ -108,30 +116,65 @@ component {
 		}
 	}
 
+	private function touchSession (string sessionID) {
+		request.sess_sid = sessionID;
+
+		var expires = dateAdd("s", timeoutSeconds, now());
+
+		writeCookie(expires, secret);
+
+		this.set('sess_expire', expires);
+
+		this.touch();
+
+		var startData = onSessionStart();
+		if (!isNull(startData) && isStruct(startData)) {
+			for (var key in startData) {
+				this.set(key, startData[key]);
+			}
+		}
+
+	}
+
+	private function writeCookie (expires, secret) {
+		cookie.sess_sid = {value: sign(secret, request.sess_sid)
+				, path: cookieOptions.path
+				, httpOnly: cookieOptions.httpOnly
+				, secure: cookieOptions.secure
+				, expires: expires};
+	}
+
 	//user should call this in Application.cfc:onRequestEnd() for any request that they called the
 	//requestStartHandler for at least
 	function requestEndHandler () {
-
+		//NotYetImplemented
 	}
 
 	function get (required string key, any defaultValue) {
-
+		var out = store.get(getSessionID(), key);
+		if (out = "") {
+			return defaultValue;
+		}
+		return out;
 	}
 
 	function set (required string key, required any value) {
-
+		return store.set(getSessionID(), key, value);
 	}
 
 	function destroy () {
-
+		return store.destroy(getSessionID());
 	}
 
 	function touch () {
-
+		return store.touch(getSessionID());
 	}
 
 	function getSessionID () {
-
+		if (isNull(request.sess_sid)) {
+			throw("You need to wait until after you call requestStartHandler()");
+		}
+		return request.sess_sid;
 	}
 
 	private string function sign (required string secret, required any input) output="false" {
