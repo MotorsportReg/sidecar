@@ -88,6 +88,7 @@ component {
 	function requestStartHandler () {
 		if (isNull(cookie.sess_sid)) {
 			//no existing session
+			touchSession(genSessionID());
 		} else {
 			var val = unsign(newSecret, cookie.sess_sid);
 			if (val == false) {
@@ -95,13 +96,13 @@ component {
 				if (val == false) {
 					//cookie exists, but is invalid session
 					//delete existing cookie
-					writeCookie("NOW", secret);
+					removeCookie();
 					//start new session
 					touchSession(genSessionID());
 				} else {
 					//cookie needs to be recreated using newSecret
 					//get rid of old secret cookie
-					writeCookie("NOW", oldSecret);
+					removeCookie();
 					//create new secret
 					touchSession(listFirst(val, "|"));
 				}
@@ -121,7 +122,7 @@ component {
 
 		var expires = dateAdd("s", timeoutSeconds, now());
 
-		writeCookie(expires, secret);
+		writeCookie(expires, newSecret);
 
 		this.set('sess_expire', expires);
 
@@ -142,6 +143,14 @@ component {
 				, httpOnly: cookieOptions.httpOnly
 				, secure: cookieOptions.secure
 				, expires: expires};
+	}
+
+	private function removeCookie () {
+		cookie.sess_sid = {value: cookie.sess_sid
+				, path: cookieOptions.path
+				, httpOnly: cookieOptions.httpOnly
+				, secure: cookieOptions.secure
+				, expires: "NOW"};
 	}
 
 	//user should call this in Application.cfc:onRequestEnd() for any request that they called the

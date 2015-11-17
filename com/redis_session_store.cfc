@@ -1,11 +1,11 @@
 component {
 
-	property array clients;
+	property any srv;
 	property string prefix;
 	property numeric ttl;
 
-	function init (required any client, numeric ttl = 86400, string prefix = "redis-session-store_") {
-		variables.client = arguments.client;
+	function init (required any srv, numeric ttl = 86400, string prefix = "redis-session-store_") {
+		variables.srv = arguments.srv;
 		variables.prefix = arguments.prefix;
 		variables.ttl = arguments.ttl;
 
@@ -14,19 +14,19 @@ component {
 
 	function destroy (required string sessionID) {
 
-		return client.del(prefix & sessionID);
+		return srv.del(prefix & sessionID);
 	}
 
 	function get (required string sessionID, required string key) {
-		return client.hGet(prefix & sessionID, key);
+		return srv.hGet(prefix & sessionID, key);
 	}
 
 	function set (required string sessionID, required string key, required string value) {
-		return client.hSet(prefix & sessionID, key, value);
+		return srv.hSet(prefix & sessionID, key, value);
 	}
 
 	function touch (required any sessionID) {
-		return client.expire(prefix & sessionID, ttl);
+		return srv.expire(prefix & sessionID, ttl);
 	}
 
 }
