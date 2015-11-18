@@ -47,10 +47,7 @@ component skip="true" {
 	function appInit () {
 
 		var redis = getRedisClient();
-		var redlock = new lib.redlock([redis], {
-				retryCount: 2,
-				retryDelay: 150
-			});
+
 
 		var store = new com.redis_session_store(redis);
 		var sess = new com.cf_sess();

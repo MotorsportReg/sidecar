@@ -113,7 +113,6 @@ component {
 
 			//by this point we should have a session to work with
 
-
 		}
 	}
 
@@ -161,7 +160,7 @@ component {
 
 	function get (required string key, any defaultValue) {
 		var out = store.get(getSessionID(), key);
-		if (out = "") {
+		if (out == "") {
 			return defaultValue;
 		}
 		return out;

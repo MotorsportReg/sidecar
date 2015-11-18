@@ -14,7 +14,11 @@ component extends="testbox.system.BaseSpec" {
 	}
 
 	function run () {
+		application.sess.set("foo", "bar2");
 
+		dump(application.sess.get("foo"));
+
+		//application.sess.destroy();
 	}
 
 
