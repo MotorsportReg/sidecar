@@ -32,6 +32,14 @@ component {
 		return this;
 	}
 
+	private numeric function unixtimemillis () {
+		return createObject("java", "java.lang.System").currentTimeMillis();
+	}
+
+	private numeric function unixtime () {
+		return int(unixTimeMillis() / 1000);
+	}
+
 	//todo: come up with a better name for this
 	function setLoggingHeader (required string header) {
 		variables.loggingHeader = arguments.header;
@@ -155,7 +163,21 @@ component {
 	//user should call this in Application.cfc:onRequestEnd() for any request that they called the
 	//requestStartHandler for at least
 	function requestEndHandler () {
-		//NotYetImplemented
+		purgeSessions();
+	}
+
+	function purgeSessions () {
+		var allSessions = store.all();
+
+		//todo: this is naive and will check all sessions every time for expired sessions, probably need to do this a different way
+		//todo: also consider doing this in a different thread
+		for (var sessionID in allSessions) {
+			if (allSessions[sessionID] < unixTime()) {
+				var sessionData = store.getEntireSession(sessionID);
+				onSessionEnd(sessionData);
+				store.destroy(sessionID);
+			}
+		}
 	}
 
 	function get (required string key, any defaultValue) {
@@ -175,7 +197,7 @@ component {
 	}
 
 	function touch () {
-		return store.touch(getSessionID());
+		return store.touch(getSessionID(), unixtime() + (timeoutSeconds));
 	}
 
 	function getSessionID () {

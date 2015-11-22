@@ -2,13 +2,12 @@ component {
 
 	property any redis;
 	property string prefix;
-	property numeric ttl;
 	property any redlock;
 
-	function init (required any redis, numeric ttl = 86400, string prefix = "redis-session-store_") {
+	function init (required any redis, string prefix = "redis-session-store_") {
 		variables.redis = arguments.redis;
 		variables.prefix = arguments.prefix;
-		variables.ttl = arguments.ttl;
+
 		variables.redlock = new redlock([redis], {
 				retryCount: 2,
 				retryDelay: 150
@@ -27,6 +26,7 @@ component {
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
 			result = redis.del(prefix & sessionID);
+			redis.hDel(prefix & "_session_expires", sessionID);
 			lock.unlock();
 		});
 		return result;
@@ -42,6 +42,16 @@ component {
 		return result;
 	}
 
+	function getEntireSession (required string session) {
+		var result = false;
+		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
+			if (len(err)) throw(err);
+			result = redis.hGetAll(prefix & sessionID);
+			lock.unlock();
+		});
+		return result;
+	}
+
 	function set (required string sessionID, required string key, required string value) {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
@@ -52,23 +62,24 @@ component {
 		return result;
 	}
 
-	function touch (required any sessionID) {
+	function touch (required any sessionID, required numeric expires) {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
-			result = redis.expire(prefix & sessionID, ttl);
+			result = redis.expire(prefix & sessionID, expires);
+			redis.hset(prefix & "_session_expires", sessionID, expires);
 			lock.unlock();
 		});
 		return result;
 	}
 
 	function all () {
-		var hashes = redis.keys(prefix & "*");
-		var output = [];
-		for (var hash in hashes) {
-			arrayAppend(output, replace(hash, prefix, ""));
-		}
-		return output;
+		return redis.hGetAll(prefix & "_session_expires");
+	}
+
+	function length () {
+		var keys = redis.hKeys(prefix & "_session_expires");
+		return arrayLen(keys);
 	}
 
 }
