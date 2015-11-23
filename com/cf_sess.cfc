@@ -6,6 +6,7 @@ component {
 	property string newSecret;
 	property any store;
 	property any serializer;
+	property any deserializer;
 	property struct cookieOptions;
 	property any onSessionStart;
 	property any onSessionEnd;
@@ -18,6 +19,7 @@ component {
 		variables.oldSecret = "old-super-secret-passphrase";
 		variables.newSecret = "new-super-secret-passphrase";
 		variables.serializer = function(input) { return serializeJSON(input); };
+		variables.deserializer = function(input) { return deserializeJSON(input); };
 		//todo: come up with a better default for the genSessionID function
 		variables.genSessionID = function() { return createUUID(); };
 		variables.cookieOptions = {
@@ -180,15 +182,32 @@ component {
 		}
 	}
 
+	private function ensureRequestSessionCache () {
+		if (isNull(request.sess_cache) || !isStruct(request.sess_cache)) {
+			request.sess_cache = structNew();
+		}
+	}
+
 	function get (required string key, any defaultValue) {
-		var out = store.get(getSessionID(), key);
+		ensureRequestSessionCache();
+		var out = "";
+		if (structKeyExists(request.sess_cache, key)) {
+			out = request.sess_cache[key];
+		} else {
+			out = store.get(getSessionID(), key);
+		}
+		request.sess_cache[key] = out;
 		if (out == "") {
 			return defaultValue;
 		}
-		return out;
+		return variables.deserializer(out);
 	}
 
 	function set (required string key, required any value) {
+		ensureRequestSessionCache();
+		value = variables.serializer(value);
+
+		request.sess_cache[key] = value;
 		return store.set(getSessionID(), key, value);
 	}
 

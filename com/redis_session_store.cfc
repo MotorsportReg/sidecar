@@ -42,7 +42,7 @@ component {
 		return result;
 	}
 
-	function getEntireSession (required string session) {
+	function getEntireSession (required string sessionID) {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
@@ -66,7 +66,7 @@ component {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
-			result = redis.expire(prefix & sessionID, expires);
+			//result = redis.expire(prefix & sessionID, expires);
 			redis.hset(prefix & "_session_expires", sessionID, expires);
 			lock.unlock();
 		});
