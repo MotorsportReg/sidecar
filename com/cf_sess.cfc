@@ -98,7 +98,7 @@ component {
 	function requestStartHandler () {
 		if (isNull(cookie.sess_sid)) {
 			//no existing session
-			touchSession(genSessionID());
+			touchSession(genSessionID(), true);
 		} else {
 			var val = unsign(newSecret, cookie.sess_sid);
 			if (val == false) {
@@ -108,17 +108,17 @@ component {
 					//delete existing cookie
 					removeCookie();
 					//start new session
-					touchSession(genSessionID());
+					touchSession(genSessionID(), true);
 				} else {
 					//cookie needs to be recreated using newSecret
 					//get rid of old secret cookie
 					removeCookie();
 					//create new secret
-					touchSession(listFirst(val, "|"));
+					touchSession(listFirst(val, "|"), false);
 				}
 			} else {
 				//existing session was fine, just touch it
-				touchSession(listFirst(val, "|"));
+				touchSession(listFirst(val, "|"), false);
 			}
 
 			//by this point we should have a session to work with
@@ -126,24 +126,26 @@ component {
 		}
 	}
 
-	private function touchSession (string sessionID) {
+	private function touchSession (string sessionID, boolean isNewSession = false) {
 		request.sess_sid = sessionID;
 
 		var expires = dateAdd("s", timeoutSeconds, now());
 
 		writeCookie(expires, newSecret);
 
+		//not sure if this is really necessary, I think the touch() should do everything
 		this.set('sess_expire', expires);
 
 		this.touch();
 
-		var startData = onSessionStart();
-		if (!isNull(startData) && isStruct(startData)) {
-			for (var key in startData) {
-				this.set(key, startData[key]);
+		if (isNewSession) {
+			var startData = onSessionStart();
+			if (!isNull(startData) && isStruct(startData)) {
+				for (var key in startData) {
+					this.set(key, startData[key]);
+				}
 			}
 		}
-
 	}
 
 	private function writeCookie (expires, secret) {

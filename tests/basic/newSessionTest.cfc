@@ -16,6 +16,12 @@ component extends="testbox.system.BaseSpec" {
 	function run () {
 
 		describe("baseline environment", function () {
+
+			it("should have started a new session", function() {
+				expect(request).toHaveKey("sessionStarted");
+				expect(request.sessionStarted).toBeTrue();
+			});
+
 			it("should have request.sess_sid", function() {
 				expect(request).toHaveKey("sess_sid");
 				expect(request.sess_sid).notToBeEmpty();

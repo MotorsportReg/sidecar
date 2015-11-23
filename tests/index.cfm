@@ -5,10 +5,44 @@ any cookies returned will be passed to the subsequent requests.
 
 <cfscript>
 
-	testURLS = [
-		  "/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.newSessionTest&reinit=true"
-		, "/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.existingSessionTest"
-		];
+	steps = [
+		{
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.newSessionTest&reinit=true",
+			before:	function(index) {
+				cookies = {};
+				writeoutput("before step " & index);
+				//writedump(cookies);
+			},
+			after: function (index) {
+				writeoutput("after step " & index);
+				//writedump(cookies);
+			}
+		}
+		, {
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.existingSessionTest",
+			before: function(index) {
+				writeoutput("before step " & index);
+				//writedump(cookies);
+			},
+			after: function (index) {
+				writeoutput("after step " & index);
+				//writedump(cookies);
+			}
+		}
+		, {
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.malformedCookieTest",
+			before: function(index) {
+				writeoutput("before step " & index);
+
+				cookies.sess_sid["value"] = "foo";
+				//writedump(cookies);
+			},
+			after: function (index) {
+				writeoutput("after step " & index);
+				//writedump(cookies);
+			}
+		}
+	];
 
 	function getResponseCookies (required struct response) {
 
@@ -20,8 +54,14 @@ any cookies returned will be passed to the subsequent requests.
 
 		var rawCookies = response.ResponseHeader["Set-Cookie"];
 
-		if (!isStruct(rawCookies)) {
+		if (isSimpleValue(rawCookies)) {
 			rawCookies = {"1": rawCookies};
+		} else if (isArray(rawCookies)) {
+			rawCookiesObject = {};
+			for (var i = 1; i <= arrayLen(rawCookies); i++) {
+				rawCookiesObject[i] = rawCookies[i];
+			}
+			rawCookies = rawCookiesObject;
 		}
 
 		for (var cookieIndex in rawCookies) {
@@ -49,7 +89,14 @@ any cookies returned will be passed to the subsequent requests.
 	function getCookiesString(cookies) {
 		var output = [];
 		for (var key in cookies) {
-			arrayAppend(output, key & "=" & cookies[key]["value"]);
+			try {
+				arrayAppend(output, key & "=" & cookies[key]["value"]);
+			} catch ( any e ) {
+				writedump(cookies);
+				writedump(key);
+				writedump(e);
+				abort;
+			}
 		}
 		return arrayToList(output, ";");
 	}
@@ -61,11 +108,19 @@ any cookies returned will be passed to the subsequent requests.
 <!---<cfdump var="#cgi#" abort="true"/>--->
 
 
+<cfset index = 0 />
 
-<cfloop array="#testURLS#" index="testURL">
+<cfloop array="#steps#" index="step">
+	<cfset index++ />
+
+	<cfif structKeyExists(step, "before")>
+		<cfset step.before(index) />
+	</cfif>
 
 	<cfset cookieString = getCookiesString(cookies) />
-	<cfhttp url="http://#cgi.server_name##testURL#" method="GET" result="httpResult">
+
+	<!---<cfdump var="#cookieString#" abort="false"/>--->
+	<cfhttp url="http://#cgi.server_name##step.url#" method="GET" result="httpResult">
 		<cfif len(cookieString)>
 			<cfhttpparam type="header" name="Cookie" value="#cookieString#" />
 		</cfif>
@@ -77,7 +132,13 @@ any cookies returned will be passed to the subsequent requests.
 	<cfdump var="#getCookiesString(cookies)#" />--->
 	<cfoutput>
 		#httpResult.fileContent#
-		<hr />
+
 	</cfoutput>
 
+	<cfif structKeyExists(step, "after")>
+		<cfset step.after(index) />
+	</cfif>
+
+
+	<hr />
 </cfloop>

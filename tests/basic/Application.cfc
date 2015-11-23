@@ -13,6 +13,8 @@ component skip="true" {
 	};
 
 	this.sessionmanagement = false;
+	this.setclientcookies = false;
+	//this.setDomainCookies = false;
 
 	private function getRedisClient () {
 		local.redisHost = "localhost";  // redis server hostname or ip address
@@ -53,6 +55,9 @@ component skip="true" {
 		var sess = new com.cf_sess();
 			sess.setSessionStorage(store);
 			sess.setSecrets("3", "4");
+			sess.onSessionStart(function() {
+				request.sessionStarted = true;
+			});
 
 
 		lock scope="application" type="exclusive" timeout="1" throwOnTimeout=true {
@@ -95,6 +100,9 @@ component skip="true" {
 		if (!isNull(url.reinit) && url.reinit == true) {
 			appInit();
 		}
+
+		//copy cookie struct into request for tests to examine
+		request.originalCookieStruct = duplicate(cookie);
 
 		application.sess.requestStartHandler();
 

@@ -7,6 +7,8 @@ component extends="testbox.system.BaseSpec" {
 
 
 	function beforeAll () {
+
+
 	}
 
 	function afterAll () {
@@ -16,6 +18,13 @@ component extends="testbox.system.BaseSpec" {
 	function run () {
 
 		describe("existing Session", function () {
+
+
+			it("should NOT have started a new session", function() {
+				expect(request).notToHaveKey("sessionStarted");
+			});
+
+
 			it("should have request.sess_sid", function() {
 				expect(request).toHaveKey("sess_sid");
 				expect(request.sess_sid).notToBeEmpty();
