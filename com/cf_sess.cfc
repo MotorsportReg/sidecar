@@ -8,8 +8,8 @@ component {
 	property any serializer;
 	property any deserializer;
 	property struct cookieOptions;
-	property any onSessionStart;
-	property any onSessionEnd;
+	property any sessionStartCallback;
+	property any sessionEndCallback;
 
 	function init () {
 
@@ -28,17 +28,17 @@ component {
 			secure: false,
 			maxAge: 0
 		};
-		variables.onSessionStart = function() {};
-		variables.onSessionEnd = function() {};
+		variables.sessionStartCallback = function() {};
+		variables.sessionEndCallback = function() {};
 
 		return this;
 	}
 
-	private numeric function unixtimemillis () {
+	numeric function unixtimemillis () {
 		return createObject("java", "java.lang.System").currentTimeMillis();
 	}
 
-	private numeric function unixtime () {
+	numeric function unixtime () {
 		return int(unixTimeMillis() / 1000);
 	}
 
@@ -83,13 +83,13 @@ component {
 	}
 
 	function onSessionStart (required any f) {
-		variables.onSessionStart = arguments.f;
+		variables.sessionStartCallback = arguments.f;
 		return this;
 	}
 
 	//requestEndHandler will find any expired sessions and call this method for each (maybe in another thread?)
 	function onSessionEnd (required any f) {
-		variables.onSessionEnd = arguments.f;
+		variables.sessionEndCallback = arguments.f;
 		return this;
 	}
 
@@ -139,7 +139,7 @@ component {
 		this.touch();
 
 		if (isNewSession) {
-			var startData = onSessionStart();
+			var startData = sessionStartCallback();
 			if (!isNull(startData) && isStruct(startData)) {
 				for (var key in startData) {
 					this.set(key, startData[key]);
@@ -171,17 +171,25 @@ component {
 	}
 
 	function purgeSessions () {
-		var allSessions = store.all();
+		var expired = store.expired();
 
-		//todo: this is naive and will check all sessions every time for expired sessions, probably need to do this a different way
-		//todo: also consider doing this in a different thread
-		for (var sessionID in allSessions) {
-			if (allSessions[sessionID] < unixTime()) {
-				var sessionData = store.getEntireSession(sessionID);
-				onSessionEnd(sessionData);
-				store.destroy(sessionID);
-			}
+		//writedump(var=expired, label="expired");
+
+		for (var sessionID in expired) {
+			var sessionData = store.getEntireSession(sessionID);
+			sessionEndCallback(sessionData);
+			store.destroy(sessionID);
 		}
+	}
+
+	//included for testing
+	function _getAllSessions () {
+		return store.all();
+	}
+
+	//included for testing
+	function _getExpiredSessions () {
+		return store.expired();
 	}
 
 	private function ensureRequestSessionCache () {
@@ -262,6 +270,9 @@ component {
 		return arrayToList(sb, "");
 	}
 
-
+	//cleanup routine that will delete everything from redis related to this session store, only necessary for testing!
+	function _wipe_all () {
+		return store._wipe_all();
+	}
 
 }

@@ -35,7 +35,6 @@ component extends="testbox.system.BaseSpec" {
 				expect(request).toHaveKey("sessionStarted");
 				expect(request.sessionStarted).toBeTrue();
 			});
-
 		});
 
 

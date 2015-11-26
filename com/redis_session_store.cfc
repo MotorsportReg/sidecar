@@ -5,7 +5,7 @@ component {
 	property any redlock;
 
 	function init (required any redis, string prefix = "redis-session-store_") {
-		variables.redis = arguments.redis;
+		variables.redis = extendCFRedis(arguments.redis);
 		variables.prefix = arguments.prefix;
 
 		variables.redlock = new redlock([redis], {
@@ -14,6 +14,14 @@ component {
 			});
 
 		return this;
+	}
+
+	private numeric function unixtimemillis () {
+		return createObject("java", "java.lang.System").currentTimeMillis();
+	}
+
+	private numeric function unixtime () {
+		return int(unixTimeMillis() / 1000);
 	}
 
 	private function getLockName (required string sessionID) {
@@ -26,7 +34,7 @@ component {
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
 			result = redis.del(prefix & sessionID);
-			redis.hDel(prefix & "_session_expires", sessionID);
+			redis.zrem_fixed(prefix & "_session_expires", sessionID);
 			lock.unlock();
 		});
 		return result;
@@ -67,19 +75,80 @@ component {
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
 			//result = redis.expire(prefix & sessionID, expires);
-			redis.hset(prefix & "_session_expires", sessionID, expires);
+			redis.zadd(prefix & "_session_expires", expires, sessionID);
 			lock.unlock();
 		});
 		return result;
 	}
 
 	function all () {
-		return redis.hGetAll(prefix & "_session_expires");
+		return redis.zrangeByScore(prefix & "_session_expires", "-inf", "+inf");
+	}
+
+	function expired (numeric expiredBefore = unixTime()) {
+		return redis.zrangeByScore(prefix & "_session_expires", "0", expiredBefore);
 	}
 
 	function length () {
 		var keys = redis.hKeys(prefix & "_session_expires");
 		return arrayLen(keys);
+	}
+
+	//cleanup routine that will delete everything from redis related to this session store, only necessary for testing!
+	function _wipe_all () {
+		var keys = redis.keys(prefix & "*");
+
+		for (var key in keys) {
+			redis.del(key);
+		}
+
+		return arrayLen(keys);
+	}
+
+	private function __zrem_fixed (key, member) {
+
+		if (!isArray(member)) {
+			member = [member];
+		}
+
+		var conn = getResource();
+		var result = conn.zrem(JavaCast("string", key), JavaCast("string[]", member));
+
+		returnResource(conn);
+
+		if (isNull(result)) {
+			result = 0;
+		}
+
+		return result;
+	}
+
+	private function __inject (required string name, required any f, required boolean isPublic) {
+		if (isPublic) {
+			this[name] = f;
+			variables[name] = f;
+		} else {
+			variables[name] = f;
+		}
+	}
+
+	private function __cleanup () {
+		structDelete(variables, "__inject");
+		structDelete(this, "__inject");
+		structDelete(variables, "__cleanup");
+		structDelete(this, "__cleanup");
+	}
+
+	private function extendCFRedis (required target) {
+		//write the injector first
+		target["__inject"] = variables["__inject"];
+		target["__cleanup"] = variables["__cleanup"];
+
+		target.__inject("zrem_fixed", variables["__zrem_fixed"], true);
+
+		target.__cleanup();
+
+		return target;
 	}
 
 }

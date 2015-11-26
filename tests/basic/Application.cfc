@@ -58,6 +58,7 @@ component skip="true" {
 			sess.onSessionStart(function() {
 				request.sessionStarted = true;
 			});
+			sess.setSessionTimeout(5); // 5 seconds
 
 
 		lock scope="application" type="exclusive" timeout="1" throwOnTimeout=true {
