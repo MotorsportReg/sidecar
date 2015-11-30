@@ -59,6 +59,7 @@ component skip="true" {
 				request.sessionStarted = true;
 			});
 			sess.setSessionTimeout(5); // 5 seconds
+			sess.enableDebugMode();
 
 
 		lock scope="application" type="exclusive" timeout="1" throwOnTimeout=true {

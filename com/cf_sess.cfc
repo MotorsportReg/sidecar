@@ -1,6 +1,7 @@
 component {
 
-	property string loggingHeader;
+	property string logName;
+	property boolean debugEnabled;
 	property numeric timeoutSeconds;
 	property string oldSecret;
 	property string newSecret;
@@ -14,7 +15,8 @@ component {
 	function init () {
 
 		//defaults
-		variables.loggingHeader = "";
+		variables.logName = "cf_sess";
+		variables.debugEnabled = false;
 		variables.timeoutSeconds = 60 * 60;
 		variables.oldSecret = "old-super-secret-passphrase";
 		variables.newSecret = "new-super-secret-passphrase";
@@ -34,18 +36,31 @@ component {
 		return this;
 	}
 
-	numeric function unixtimemillis () {
+	numeric function unixTimeMillis () {
 		return createObject("java", "java.lang.System").currentTimeMillis();
 	}
 
-	numeric function unixtime () {
+	numeric function unixTime () {
 		return int(unixTimeMillis() / 1000);
 	}
 
-	//todo: come up with a better name for this
-	function setLoggingHeader (required string header) {
-		variables.loggingHeader = arguments.header;
-		return this;
+	function enableDebugMode (string logName = variables.logName) {
+		variables.logName = arguments.logName;
+		variables.debugEnabled = true;
+	}
+
+	function disableDebugMode () {
+		variables.debugEnabled = false;
+	}
+
+	private function doLog (string action = "", any data = "", string sessionID = getSessionID()) {
+		if (debugEnabled) {
+			if (!isSimpleValue(data)) {
+				data = serializeJSON(data);
+			}
+			var output = [sessionID, action, data];
+			writeLog(text=arrayToList(output, ";"), file=logName);
+		}
 	}
 
 	function setSessionTimeout (required numeric timeoutSeconds) {
@@ -98,7 +113,8 @@ component {
 	function requestStartHandler () {
 		if (isNull(cookie.sess_sid)) {
 			//no existing session
-			touchSession(genSessionID(), true);
+			touch(genSessionID(), true);
+			doLog("NoExistingSession");
 		} else {
 			var val = unsign(newSecret, cookie.sess_sid);
 			if (val == false) {
@@ -108,17 +124,20 @@ component {
 					//delete existing cookie
 					removeCookie();
 					//start new session
-					touchSession(genSessionID(), true);
+					touch(genSessionID(), true);
+					doLog("CookieExistsInvalidSession");
 				} else {
 					//cookie needs to be recreated using newSecret
 					//get rid of old secret cookie
 					removeCookie();
 					//create new secret
-					touchSession(listFirst(val, "|"), false);
+					touch(listFirst(val, "|"), false);
+					doLog("OldSecretCookie");
 				}
 			} else {
 				//existing session was fine, just touch it
-				touchSession(listFirst(val, "|"), false);
+				touch(listFirst(val, "|"), false);
+				doLog("ExistingSession");
 			}
 
 			//by this point we should have a session to work with
@@ -126,7 +145,7 @@ component {
 		}
 	}
 
-	private function touchSession (string sessionID, boolean isNewSession = false) {
+	private function touch (string sessionID = getSessionID(), boolean isNewSession = false) {
 		request.sess_sid = sessionID;
 
 		var expires = dateAdd("s", timeoutSeconds, now());
@@ -136,7 +155,7 @@ component {
 		//not sure if this is really necessary, I think the touch() should do everything
 		this.set('sess_expire', expires);
 
-		this.touch();
+		store.touch(getSessionID(), unixtime() + (timeoutSeconds));
 
 		if (isNewSession) {
 			var startData = sessionStartCallback();
@@ -146,6 +165,8 @@ component {
 				}
 			}
 		}
+
+		doLog("touch", {isNewSession: isNewSession, expires: expires});
 	}
 
 	private function writeCookie (expires, secret) {
@@ -171,9 +192,12 @@ component {
 	}
 
 	function purgeSessions () {
+
 		var expired = store.expired();
 
 		//writedump(var=expired, label="expired");
+
+		doLog("purgeSessions", {expired: expired}, "");
 
 		for (var sessionID in expired) {
 			var sessionData = store.getEntireSession(sessionID);
@@ -201,7 +225,9 @@ component {
 	function get (required string key, any defaultValue) {
 		ensureRequestSessionCache();
 		var out = "";
+		var fromCache = false;
 		if (structKeyExists(request.sess_cache, key)) {
+			fromCache = true;
 			out = request.sess_cache[key];
 		} else {
 			out = store.get(getSessionID(), key);
@@ -210,6 +236,7 @@ component {
 		if (out == "") {
 			return defaultValue;
 		}
+		doLog("get", {key: key, output: out, defaultValue: defaultValue, fromCache: fromCache});
 		return variables.deserializer(out);
 	}
 
@@ -218,15 +245,14 @@ component {
 		value = variables.serializer(value);
 
 		request.sess_cache[key] = value;
+
+		doLog("set", {key: key, value: value});
 		return store.set(getSessionID(), key, value);
 	}
 
 	function destroy () {
+		doLog("destroy");
 		return store.destroy(getSessionID());
-	}
-
-	function touch () {
-		return store.touch(getSessionID(), unixtime() + (timeoutSeconds));
 	}
 
 	function getSessionID () {
@@ -272,6 +298,7 @@ component {
 
 	//cleanup routine that will delete everything from redis related to this session store, only necessary for testing!
 	function _wipe_all () {
+		doLog("_wipe_all");
 		return store._wipe_all();
 	}
 
