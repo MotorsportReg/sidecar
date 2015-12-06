@@ -70,6 +70,20 @@ component {
 		return result;
 	}
 
+	// this function will set each key in the collection separately, but in the same action
+	// use set() if you want to set the struct itself into one key
+	function setCollection (required string sessionID, required struct collection) {
+		var result = false;
+		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
+			if (len(err)) throw(err);
+			for (var key in collection) {
+				result = redis.hSet(prefix & sessionID, key, collection[key]);
+			}
+			lock.unlock();
+		});
+		return result;
+	}
+
 	function touch (required any sessionID, required numeric expires) {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {

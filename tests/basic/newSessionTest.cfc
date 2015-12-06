@@ -46,6 +46,32 @@ component extends="testbox.system.BaseSpec" {
 				expect(application.sess.getSessionID()).toBe(listFirst(cookie.sess_sid, "."));
 			});
 
+			it("should allow you to store a collection at once", function() {
+
+				//you have to use quotes for the collection or the keys will be stored in redis as UPPERCASE
+				var coll = {
+					"one": 1,
+					"two": [1,2],
+					"three": now(),
+					four: 4
+				};
+
+				application.sess.setCollection(coll);
+
+				expect(application.sess.get("one")).toBe(1);
+
+				var two = application.sess.get("two");
+				expect(two).toBeArray().toBe([1,2]);
+
+				expect(application.sess.get("three")).toBeDate();
+
+				expect(application.sess.get("FOUR")).toBe(4);
+
+				expect(application.sess.get("five")).toBe(-1);
+				expect(application.sess.get("FIVE")).toBe(-1);
+
+			});
+
 			it("should store and retrieve a struct properly", function() {
 				var structTest = {
 					one: 1,

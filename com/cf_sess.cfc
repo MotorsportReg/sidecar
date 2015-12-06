@@ -24,6 +24,7 @@ component {
 		variables.deserializer = function(input) { return deserializeJSON(input); };
 		//todo: come up with a better default for the genSessionID function
 		variables.genSessionID = function() { return createUUID(); };
+		variables.cookieName = "sess_sid";
 		variables.cookieOptions = {
 			path: "/",
 			httpOnly: true,
@@ -37,7 +38,10 @@ component {
 	}
 
 	numeric function unixTimeMillis () {
-		return createObject("java", "java.lang.System").currentTimeMillis();
+		if (isNull(variables.system)) {
+			variables.system = createObject("java", "java.lang.System");
+		}
+		return system.currentTimeMillis();
 	}
 
 	numeric function unixTime () {
@@ -47,10 +51,17 @@ component {
 	function enableDebugMode (string logName = variables.logName) {
 		variables.logName = arguments.logName;
 		variables.debugEnabled = true;
+		return this;
 	}
 
 	function disableDebugMode () {
 		variables.debugEnabled = false;
+		return this;
+	}
+
+	function setLogName (string logName = variables.logName) {
+		variables.logName = arguments.logName;
+		return this;
 	}
 
 	private function doLog (string action = "", any data = "", string sessionID = getSessionID()) {
@@ -89,7 +100,14 @@ component {
 		return this;
 	}
 
-	function setCookieOptions (string path = "/", boolean httpOnly = true, boolean secure = false, numeric maxAge = 0) {
+	function setCookieOptions (
+			string cookieName = "sess_sid",
+			string path = "/",
+			boolean httpOnly = true,
+			boolean secure = false,
+			numeric maxAge = 0) {
+
+		variables.cookieName = cookieName;
 		variables.cookieOptions.path = arguments.path;
 		variables.cookieOptions.httpOnly = arguments.httpOnly;
 		variables.cookieOptions.secure = arguments.secure;
@@ -111,14 +129,14 @@ component {
 	//user is required to call this in Application.cfc:onRequestStart() for any request that sessions
 	//should be enabled for
 	function requestStartHandler () {
-		if (isNull(cookie.sess_sid)) {
+		if (!structKeyExists(cookie, variables.cookieName)) {
 			//no existing session
 			touch(genSessionID(), true);
 			doLog("NoExistingSession");
 		} else {
-			var val = unsign(newSecret, cookie.sess_sid);
+			var val = unsign(newSecret, cookie[variables.cookieName]);
 			if (val == false) {
-				val = unsign(oldSecret, cookie.sess_sid);
+				val = unsign(oldSecret, cookie[variables.cookieName]);
 				if (val == false) {
 					//cookie exists, but is invalid session
 					//delete existing cookie
@@ -146,7 +164,7 @@ component {
 	}
 
 	private function touch (string sessionID = getSessionID(), boolean isNewSession = false) {
-		request.sess_sid = sessionID;
+		request[variables.cookieName] = sessionID;
 
 		var expires = dateAdd("s", timeoutSeconds, now());
 
@@ -170,7 +188,7 @@ component {
 	}
 
 	private function writeCookie (expires, secret) {
-		cookie.sess_sid = {value: sign(secret, request.sess_sid)
+		cookie[variables.cookieName] = {value: sign(secret, request[variables.cookieName])
 				, path: cookieOptions.path
 				, httpOnly: cookieOptions.httpOnly
 				, secure: cookieOptions.secure
@@ -178,7 +196,7 @@ component {
 	}
 
 	private function removeCookie () {
-		cookie.sess_sid = {value: cookie.sess_sid
+		cookie[variables.cookieName] = {value: cookie[variables.cookieName]
 				, path: cookieOptions.path
 				, httpOnly: cookieOptions.httpOnly
 				, secure: cookieOptions.secure
@@ -222,7 +240,7 @@ component {
 		}
 	}
 
-	function get (required string key, any defaultValue) {
+	function get (required string key, any defaultValue = -1) {
 		ensureRequestSessionCache();
 		var out = "";
 		var fromCache = false;
@@ -250,16 +268,28 @@ component {
 		return store.set(getSessionID(), key, value);
 	}
 
+	function setCollection (required struct collection) {
+		ensureRequestSessionCache();
+
+		for (var key in collection) {
+			collection[key] = variables.serializer(collection[key]);
+			request.sess_cache[key] = collection[key];
+		}
+
+		doLog("setCollection", {collection: collection});
+		return store.setCollection(getSessionID(), collection);
+	}
+
 	function destroy () {
 		doLog("destroy");
 		return store.destroy(getSessionID());
 	}
 
 	function getSessionID () {
-		if (isNull(request.sess_sid)) {
+		if (isNull(request[variables.cookieName])) {
 			throw("You need to wait until after you call requestStartHandler()");
 		}
-		return request.sess_sid;
+		return request[variables.cookieName];
 	}
 
 	private string function sign (required string secret, required any input) output="false" {
@@ -291,7 +321,6 @@ component {
 			} else {
 				arrayAppend(sb, item);
 			}
-
 		}
 		return arrayToList(sb, "");
 	}
