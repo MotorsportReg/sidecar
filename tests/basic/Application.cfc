@@ -4,6 +4,8 @@ component skip="true" {
 	this.mappings["/lib"] = expandPath("../../lib");
 	this.mappings["/com"] = expandPath("../../com");
 
+	variables.system = createObject("java", "java.lang.System");
+
 	this.javasettings = {
 		loadPaths = ["../../lib"],
 		loadColdFusionClassPath = true,
@@ -18,7 +20,14 @@ component skip="true" {
 
 	private function getRedisClient () {
 		local.redisHost = "localhost";  // redis server hostname or ip address
-		local.redisPort = 6379;         // redis server ip address
+		local.redisPort = 6379;
+
+		local.env = variables.system.getenv();
+
+		if (!isNull(local.env.REDIS_PORT)) {
+			local.redisHost = listFirst(listLast(local.env.REDIS_PORT, "//"), ":");
+			local.redisPort = listLast(local.env.REDIS_PORT, ":");
+		}
 
 		// Configure connection pool
 		local.jedisPoolConfig = CreateObject("java", "redis.clients.jedis.JedisPoolConfig");

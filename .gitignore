@@ -21,5 +21,10 @@ node_modules
 .idea/
 *.iml
 
+# cfml
 WEB-INF/
 testbox/
+
+#docker
+docker-compose.yml
+Dockerfile
