@@ -38,6 +38,14 @@ component extends="testbox.system.BaseSpec" {
 				expect(foo).toBe("bar");
 			});
 
+			it("should let us know if a key exists or not", function() {
+				application.sess.set("foo", "bar");
+				var hasFoo = application.sess.has("foo");
+				expect(hasFoo).toBe(true);
+				var hasBar = application.sess.has("bar");
+				expect(hasBar).toBe(false);
+			});
+
 			it("should return the right sessionID", function() {
 				expect(application.sess.getSessionID()).toBe(request.sess_sid);
 			});

@@ -258,6 +258,18 @@ component {
 		return variables.deserializer(out);
 	}
 
+	function has (required string key) {
+		ensureRequestSessionCache();
+		var out = false;
+		if (structKeyExists(request.sess_cache, key)) {
+			doLog("has", {key: key, output: true, fromCache: true});
+			return true;
+		}
+		out = store.has(getSessionID(), key);
+		doLog("has", {key: key, output: out, fromCache: false});
+		return out;
+	}
+
 	function set (required string key, required any value) {
 		ensureRequestSessionCache();
 		value = variables.serializer(value);
