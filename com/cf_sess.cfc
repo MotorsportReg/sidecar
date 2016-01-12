@@ -286,7 +286,7 @@ component {
 	}
 
 	function getSessionID () {
-		if (isNull(request[variables.cookieName])) {
+		if (!structKeyExists(request, variables.cookieName)) {
 			throw("You need to wait until after you call requestStartHandler()");
 		}
 		return request[variables.cookieName];
