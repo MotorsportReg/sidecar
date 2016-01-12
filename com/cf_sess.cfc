@@ -270,6 +270,19 @@ component {
 		return out;
 	}
 
+	function clear (required string key) {
+		ensureRequestSessionCache();
+		var out = false;
+		var inCache = false;
+		if (structKeyExists(request.sess_cache, key)) {
+			inCache = true;
+			structDelete(request.sess_cache, key);
+		}
+		out = store.clear(getSessionID(), key);
+		doLog("clear", {key: key, output: out, inCache: inCache});
+		return out;
+	}
+
 	function set (required string key, required any value) {
 		ensureRequestSessionCache();
 		value = variables.serializer(value);

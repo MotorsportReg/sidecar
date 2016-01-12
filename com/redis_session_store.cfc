@@ -60,6 +60,16 @@ component {
 		return result;
 	}
 
+	function clear (required string sessionID, required string key) {
+		var result = false;
+		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
+			if (len(err)) throw(err);
+			result = redis.hDel(prefix & sessionID, key);
+			lock.unlock();
+		});
+		return result;
+	}
+
 	function getEntireSession (required string sessionID) {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {

@@ -43,6 +43,20 @@ component extends="testbox.system.BaseSpec" {
 				expect(hasBar).toBe(false);
 			});
 
+
+			it("should allow us to clear a specific key", function() {
+				var hasFoo = application.sess.has("foo");
+				expect(hasFoo).toBe(true);
+
+				application.sess.clear("foo");
+
+				hasFoo = application.sess.has("foo");
+				expect(hasFoo).toBe(false);
+
+				var foo = application.sess.get("foo", "defaultValue");
+				expect(foo).toBe("defaultValue");
+			});
+
 			it("should return the right sessionID", function() {
 				expect(application.sess.getSessionID()).toBe(request.sess_sid);
 			});
