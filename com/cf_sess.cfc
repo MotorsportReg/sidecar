@@ -17,7 +17,7 @@ component {
 		//defaults
 		variables.logName = "cf_sess";
 		variables.debugEnabled = false;
-		variables.timeoutSeconds = 60 * 60;
+		variables.defaultTimeoutSeconds = 60 * 60;
 		variables.oldSecret = "old-super-secret-passphrase";
 		variables.newSecret = "new-super-secret-passphrase";
 		variables.serializer = function(input) { return serializeJSON(input); };
@@ -74,8 +74,8 @@ component {
 		}
 	}
 
-	function setSessionTimeout (required numeric timeoutSeconds) {
-		variables.timeoutSeconds = arguments.timeoutSeconds;
+	function setDefaultSessionTimeout (required numeric timeoutSeconds) {
+		variables.defaultTimeoutSeconds = arguments.timeoutSeconds;
 		return this;
 	}
 
@@ -166,12 +166,21 @@ component {
 	private function touch (string sessionID = getSessionID(), boolean isNewSession = false) {
 		request[variables.cookieName] = sessionID;
 
+		var timeoutSeconds = defaultTimeoutSeconds;
+
+		if (!isNewSession) {
+			timeoutSeconds = store.get(sessionID, "sess_timeout");
+		}
+
+		if (!isNumeric(timeoutSeconds) || timeoutSeconds < 1) {
+			timeoutSeconds = defaultTimeoutSeconds;
+		}
+
 		var expires = dateAdd("s", timeoutSeconds, now());
 
 		writeCookie(expires, newSecret);
 
-		//not sure if this is really necessary, I think the touch() should do everything
-		this.set('sess_expire', expires);
+		this.set('sess_timeout', timeoutSeconds);
 
 		store.touch(getSessionID(), unixtime() + (timeoutSeconds));
 
@@ -185,6 +194,12 @@ component {
 		}
 
 		doLog("touch", {isNewSession: isNewSession, expires: expires});
+	}
+
+	function setSessionTimeout (required numeric timeoutSeconds) {
+		this.set('sess_timeout', timeoutSeconds);
+		touch();
+		return this;
 	}
 
 	private function writeCookie (expires, secret) {

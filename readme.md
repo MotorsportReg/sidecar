@@ -2,8 +2,6 @@
 ##Todo:
 
 [ ] `setCookieOptions()` testing, especially setting a custom cookie name
-[ ] `ability to override session timeout on a per-session basis`
-
 
 
 ## How to run the tests

@@ -67,7 +67,7 @@ component skip="true" {
 			sess.onSessionStart(function() {
 				request.sessionStarted = true;
 			});
-			sess.setSessionTimeout(5); // 5 seconds
+			sess.setDefaultSessionTimeout(5); // 5 seconds
 			sess.enableDebugMode();
 
 
