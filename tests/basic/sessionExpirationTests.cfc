@@ -67,7 +67,44 @@ component extends="testbox.system.BaseSpec" {
 
 			});
 
+			it("should allow us to call destroy on a single session", function() {
+				application.sess.requestEndHandler();
+
+				application.sess.requestStartHandler();
+
+				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "Should have 1 session");
+				expect(application.sess._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
+
+				application.sess.destroy();
+
+				expect(arrayLen(application.sess._getAllSessions())).toBe(0, "the one session should be gone");
+				expect(application.sess._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
+			});
+
+
+			it("should allow us to still use a session after it has been destroyed", function() {
+				application.sess.requestEndHandler();
+
+				application.sess.requestStartHandler();
+
+				application.sess.set("foo", "bar");
+				expect(application.sess.get("foo", "default")).toBe("bar");
+
+				application.sess.destroy();
+
+				expect(application.sess.get("foo", "default")).toBe("default");
+
+				expect(arrayLen(application.sess._getAllSessions())).toBe(0, "the one session should be gone");
+				expect(application.sess._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
+
+				application.sess.set("foo", "bar");
+
+				expect(application.sess.get("foo", "default")).toBe("bar");
+			});
+
 		});
+
+
 
 
 	}

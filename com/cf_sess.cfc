@@ -64,7 +64,7 @@ component {
 		return this;
 	}
 
-	private function doLog (string action = "", any data = "", string sessionID = getSessionID()) {
+	private function doLog (string action = "", any data = "", string sessionID = getSessionID(false)) {
 		if (debugEnabled) {
 			if (!isSimpleValue(data)) {
 				data = serializeJSON(data);
@@ -113,6 +113,12 @@ component {
 		variables.cookieOptions.secure = arguments.secure;
 		variables.cookieOptions.maxAge = arguments.maxAge;
 		return this;
+	}
+
+	function getCookieOptions () {
+		var output = duplicate(cookieOptions);
+		output.cookieName = variables.cookieName;
+		return output;
 	}
 
 	function onSessionStart (required any f) {
@@ -251,8 +257,12 @@ component {
 
 	private function ensureRequestSessionCache () {
 		if (isNull(request.sess_cache) || !isStruct(request.sess_cache)) {
-			request.sess_cache = structNew();
+			clearRequestSessionCache();
 		}
+	}
+
+	private function clearRequestSessionCache () {
+		request.sess_cache = structNew();
 	}
 
 	function get (required string key, any defaultValue = -1) {
@@ -320,14 +330,21 @@ component {
 		return store.setCollection(getSessionID(), collection);
 	}
 
+	//allowed to run destroy before the session has started
 	function destroy () {
 		doLog("destroy");
-		return store.destroy(getSessionID());
+		clearRequestSessionCache();
+		var sessionID = getSessionID(throwIfInvalid = false);
+		if (!len(sessionID)) return false;
+		return store.destroy(sessionID);
 	}
 
-	function getSessionID () {
+	function getSessionID (boolean throwIfInvalid = true) {
 		if (!structKeyExists(request, variables.cookieName)) {
-			throw("You need to wait until after you call requestStartHandler()");
+			if (throwIfInvalid) {
+				throw("You need to wait until after you call requestStartHandler()");
+			}
+			return "";
 		}
 		return request[variables.cookieName];
 	}
