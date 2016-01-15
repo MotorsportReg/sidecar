@@ -2,7 +2,7 @@ component extends="testbox.system.BaseSpec" {
 
 
 	private numeric function unixtime () {
-		return createObject("java", "java.lang.System").currentTimeMillis();
+		return createObject("java", "java.lang.System").currentTimeMillis() / 1000;
 	}
 
 
@@ -53,6 +53,13 @@ component extends="testbox.system.BaseSpec" {
 
 				//this shouldnt be long enough to expire that session
 				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "Should have 1 session");
+				var expiredSessions = application.sess._getExpiredSessions();
+				if (arrayLen(expiredSessions) != 0) {
+					writedump(unixTime());
+					writedump(application.sess.getEntireSession());
+					writedump(request);
+					writedump(expiredSessions);abort;
+				}
 				expect(application.sess._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
 
 				sleep(5 * 1000);

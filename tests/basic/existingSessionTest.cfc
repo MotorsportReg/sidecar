@@ -67,8 +67,7 @@ component extends="testbox.system.BaseSpec" {
 
 			it("should allow you to retrieve items stored as a collection individually", function() {
 
-				expect(application.sess.get("one")).toBe(1);
-
+				expect(application.sess.get("one", "defaultValue!")).toBe(1);
 				var two = application.sess.get("two");
 				expect(two).toBeArray().toBe([1,2]);
 
@@ -79,6 +78,21 @@ component extends="testbox.system.BaseSpec" {
 				expect(application.sess.get("five")).toBe(-1);
 				expect(application.sess.get("FIVE")).toBe(-1);
 
+			});
+
+			it("should allow you to retrieve the entire session", function() {
+
+				var s = application.sess.getEntireSession();
+
+				expect(s).toBeStruct();
+
+				expect(structKeyExists(s, "one")).toBeTrue();
+				expect(s["one"]).toBe(1);
+				expect(s.one).toBe(1);
+				expect(s.two).toBeArray().toBe([1,2]);
+				expect(s.three).toBeDate();
+				expect(s.four).toBe(4);
+				expect(structKeyExists(s, "five")).toBeFalse();
 			});
 
 		});

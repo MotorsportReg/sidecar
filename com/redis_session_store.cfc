@@ -40,13 +40,20 @@ component {
 		return result;
 	}
 
-	function get (required string sessionID, required string key) {
+	function get (required string sessionID, required string key, any defaultValue) {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
-			result = redis.hGet(prefix & sessionID, key);
+			result = redis.hgetReturnsUndefined(prefix & sessionID, key);
 			lock.unlock();
 		});
+		//ACF is such a piece of junk
+		if (isNull(result)) {
+			if (!isNull(defaultValue)) {
+				return defaultValue;
+			}
+			return JavaCast("null", "");
+		}
 		return result;
 	}
 
@@ -109,6 +116,7 @@ component {
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
 			//result = redis.expire(prefix & sessionID, expires);
+			redis.hSet(prefix & sessionID, "_session_expires", expires);
 			redis.zadd(prefix & "_session_expires", expires, sessionID);
 			lock.unlock();
 		});
@@ -157,6 +165,19 @@ component {
 		return result;
 	}
 
+	private function __hgetReturnsUndefined (string key, string field) {
+		var conn = getResource();
+		var result = conn.hget(JavaCast("string", key), JavaCast("string", field));
+
+		returnResource(conn);
+
+		if (!isNull(result)) {
+			return result;
+		}
+
+		return JavaCast("null", "");
+	}
+
 	private function __inject (required string name, required any f, required boolean isPublic) {
 		if (isPublic) {
 			this[name] = f;
@@ -179,6 +200,7 @@ component {
 		target["__cleanup"] = variables["__cleanup"];
 
 		target.__inject("zrem_fixed", variables["__zrem_fixed"], true);
+		target.__inject("hgetReturnsUndefined", variables["__hgetReturnsUndefined"], true);
 
 		target.__cleanup();
 

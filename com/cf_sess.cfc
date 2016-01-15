@@ -175,7 +175,7 @@ component {
 		var timeoutSeconds = defaultTimeoutSeconds;
 
 		if (!isNewSession) {
-			timeoutSeconds = store.get(sessionID, "sess_timeout");
+			timeoutSeconds = store.get(sessionID, "SESS_TIMEOUT", 0);
 		}
 
 		if (!isNumeric(timeoutSeconds) || timeoutSeconds < 1) {
@@ -186,7 +186,7 @@ component {
 
 		writeCookie(expires, newSecret);
 
-		this.set('sess_timeout', timeoutSeconds);
+		set('SESS_TIMEOUT', timeoutSeconds);
 
 		store.touch(getSessionID(), unixtime() + (timeoutSeconds));
 
@@ -194,7 +194,8 @@ component {
 			var startData = sessionStartCallback();
 			if (!isNull(startData) && isStruct(startData)) {
 				for (var key in startData) {
-					this.set(key, startData[key]);
+					key = ucase(key);
+					set(key, startData[key]);
 				}
 			}
 		}
@@ -203,7 +204,7 @@ component {
 	}
 
 	function setSessionTimeout (required numeric timeoutSeconds) {
-		this.set('sess_timeout', timeoutSeconds);
+		set('SESS_TIMEOUT', timeoutSeconds, false);
 		touch();
 		return this;
 	}
@@ -267,6 +268,7 @@ component {
 
 	function get (required string key, any defaultValue = -1) {
 		ensureRequestSessionCache();
+		key = ucase(key);
 		var out = "";
 		var fromCache = false;
 		if (structKeyExists(request.sess_cache, key)) {
@@ -275,16 +277,36 @@ component {
 		} else {
 			out = store.get(getSessionID(), key);
 		}
-		request.sess_cache[key] = out;
-		if (out == "") {
+		if (!isDefined("out")) {
+			doLog("get", {key: key, output: defaultValue, defaultValue: defaultValue, fromCache: fromCache});
 			return defaultValue;
 		}
+		request.sess_cache[key] = out;
 		doLog("get", {key: key, output: out, defaultValue: defaultValue, fromCache: fromCache});
 		return variables.deserializer(out);
 	}
 
+	function getEntireSession() {
+		var data = store.getEntireSession(getSessionID());
+		var output = structNew();
+		for (var key in data) {
+			output[ucase(key)] = variables.deserializer(data[key]);
+		}
+		return output;
+	}
+
+	function _getEntireRequestCache() {
+		var data = request.sess_cache;
+		var output = structNew();
+		for (var key in data) {
+			output[key] = variables.deserializer(data[key]);
+		}
+		return output;
+	}
+
 	function has (required string key) {
 		ensureRequestSessionCache();
+		key = ucase(key);
 		var out = false;
 		if (structKeyExists(request.sess_cache, key)) {
 			doLog("has", {key: key, output: true, fromCache: true});
@@ -297,6 +319,7 @@ component {
 
 	function clear (required string key) {
 		ensureRequestSessionCache();
+		key = ucase(key);
 		var out = false;
 		var inCache = false;
 		if (structKeyExists(request.sess_cache, key)) {
@@ -310,24 +333,26 @@ component {
 
 	function set (required string key, required any value) {
 		ensureRequestSessionCache();
-		value = variables.serializer(value);
+		key = ucase(key);
+		var serializedValue = variables.serializer(value);
 
-		request.sess_cache[key] = value;
+		request.sess_cache[key] = serializedValue;
 
-		doLog("set", {key: key, value: value});
-		return store.set(getSessionID(), key, value);
+		doLog("set", {key: key, value: serializedValue});
+		return store.set(getSessionID(), key, serializedValue);
 	}
 
 	function setCollection (required struct collection) {
 		ensureRequestSessionCache();
-
+		var coll = structNew();
 		for (var key in collection) {
-			collection[key] = variables.serializer(collection[key]);
-			request.sess_cache[key] = collection[key];
+			key = ucase(key);
+			coll[key] = variables.serializer(collection[key]);
+			request.sess_cache[key] = coll[key];
 		}
 
-		doLog("setCollection", {collection: collection});
-		return store.setCollection(getSessionID(), collection);
+		doLog("setCollection", {collection: coll});
+		return store.setCollection(getSessionID(), coll);
 	}
 
 	//allowed to run destroy before the session has started

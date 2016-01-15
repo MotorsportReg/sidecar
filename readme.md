@@ -2,7 +2,7 @@
 ##Todo:
 
 [ ] `setCookieOptions()` testing, especially setting a custom cookie name
-
+[ ] `_getEntireRequestCache()` testing
 
 ## How to run the tests
 
