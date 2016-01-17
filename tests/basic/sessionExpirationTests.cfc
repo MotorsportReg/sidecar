@@ -95,18 +95,18 @@ component extends="testbox.system.BaseSpec" {
 				application.sess.requestStartHandler();
 
 				application.sess.set("foo", "bar");
-				expect(application.sess.get("foo", "default")).toBe("bar");
+				expect(application.sess.get("foo", "default", true)).toBe("bar");
 
 				application.sess.destroy();
 
-				expect(application.sess.get("foo", "default")).toBe("default");
+				expect(application.sess.get("foo", "default", true)).toBe("default");
 
 				expect(arrayLen(application.sess._getAllSessions())).toBe(0, "the one session should be gone");
 				expect(application.sess._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
 
 				application.sess.set("foo", "bar");
 
-				expect(application.sess.get("foo", "default")).toBe("bar");
+				expect(application.sess.get("foo", "default", true)).toBe("bar");
 			});
 
 		});

@@ -53,7 +53,7 @@ component extends="testbox.system.BaseSpec" {
 				hasFoo = application.sess.has("foo");
 				expect(hasFoo).toBe(false);
 
-				var foo = application.sess.get("foo", "defaultValue");
+				var foo = application.sess.get("foo", "defaultValue", true);
 				expect(foo).toBe("defaultValue");
 			});
 
@@ -67,16 +67,21 @@ component extends="testbox.system.BaseSpec" {
 
 			it("should allow you to retrieve items stored as a collection individually", function() {
 
-				expect(application.sess.get("one", "defaultValue!")).toBe(1);
-				var two = application.sess.get("two");
+				expect(application.sess.get("one", "defaultValue", true)).toBe(1);
+				expect(application.sess.get("one", "defaultValue", false)).toBe(1);
+				var two = application.sess.get("two", "defaultValue", true);
 				expect(two).toBeArray().toBe([1,2]);
 
-				expect(application.sess.get("three")).toBeDate();
+				expect(application.sess.get("three", "defaultValue", true)).toBeDate();
+				expect(application.sess.get("three", "defaultValue", false)).toBeDate();
 
-				expect(application.sess.get("FOUR")).toBe(4);
+				expect(application.sess.get("FOUR", "defaultValue", true)).toBe(4);
+				expect(application.sess.get("FOUR", "defaultValue", false)).toBe(4);
 
-				expect(application.sess.get("five")).toBe(-1);
-				expect(application.sess.get("FIVE")).toBe(-1);
+				expect(application.sess.get("five", "defaultValue", true)).toBe("defaultValue");
+				expect(application.sess.get("five", "defaultValue", false)).toBe("defaultValue");
+				expect(application.sess.get("FIVE", "defaultValue", true)).toBe("defaultValue");
+				expect(application.sess.get("FIVE", "defaultValue", false)).toBe("defaultValue");
 
 			});
 

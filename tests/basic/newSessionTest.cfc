@@ -66,17 +66,17 @@ component extends="testbox.system.BaseSpec" {
 
 				application.sess.setCollection(coll);
 
-				expect(application.sess.get("one")).toBe(1);
+				expect(application.sess.get("one", "defaultValue", true)).toBe(1);
 
-				var two = application.sess.get("two");
+				var two = application.sess.get("two", "defaultValue", true);
 				expect(two).toBeArray().toBe([1,2]);
 
-				expect(application.sess.get("three")).toBeDate();
+				expect(application.sess.get("three", "defaultValue", true)).toBeDate();
 
-				expect(application.sess.get("FOUR")).toBe(4);
+				expect(application.sess.get("FOUR", "defaultValue", true)).toBe(4);
 
-				expect(application.sess.get("five")).toBe(-1);
-				expect(application.sess.get("FIVE")).toBe(-1);
+				expect(application.sess.get("five", "defaultValue", true)).toBe("defaultValue");
+				expect(application.sess.get("FIVE", "defaultValue", true)).toBe("defaultValue");
 
 			});
 
@@ -89,7 +89,7 @@ component extends="testbox.system.BaseSpec" {
 
 				application.sess.set("structTest", structTest);
 
-				var output = application.sess.get("structTest", "default");
+				var output = application.sess.get("structTest", "default", true);
 
 				expect(output).toBeStruct();
 				expect(output).toBe(structTest);

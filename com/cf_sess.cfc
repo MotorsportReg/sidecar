@@ -266,12 +266,15 @@ component {
 		request.sess_cache = structNew();
 	}
 
-	function get (required string key, any defaultValue = -1) {
-		ensureRequestSessionCache();
+	function get (required string key, any defaultValue = -1, boolean bypassRequestCache = false) {
+		if (!bypassRequestCache) {
+			ensureRequestSessionCache();
+		}
+
 		key = ucase(key);
 		var out = "";
 		var fromCache = false;
-		if (structKeyExists(request.sess_cache, key)) {
+		if (!bypassRequestCache && structKeyExists(request.sess_cache, key)) {
 			fromCache = true;
 			out = request.sess_cache[key];
 		} else {
