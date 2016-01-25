@@ -20,8 +20,14 @@ component {
 		variables.defaultTimeoutSeconds = 60 * 60;
 		variables.oldSecret = "old-super-secret-passphrase";
 		variables.newSecret = "new-super-secret-passphrase";
-		variables.serializer = function(input) { return serializeJSON(input); };
-		variables.deserializer = function(input) { return deserializeJSON(input); };
+		variables.serializer = function(input) { return binaryEncode(objectSave(input), "Base64"); };
+		variables.deserializer = function(input) {
+			try {
+				return objectLoad(binaryDecode(input, "Base64"));
+			} catch (any e) {
+				return input;
+			}
+		};
 		//todo: come up with a better default for the genSessionID function
 		variables.genSessionID = function() { return createUUID(); };
 		variables.cookieName = "sess_sid";
@@ -67,7 +73,14 @@ component {
 	private function doLog (string action = "", any data = "", string sessionID = getSessionID(false)) {
 		if (debugEnabled) {
 			if (!isSimpleValue(data)) {
-				data = serializeJSON(data);
+				if (isBinary(data)) {
+					data = "{{binary data}}";
+				} else if (isStruct(data) && structKeyExists(data, "value") && isbinary(data.value)) {
+					data.value = "{{binary data}}";
+					data = serializeJSON(data);
+				} else {
+					data = serializeJSON(data);
+				}
 			}
 			var output = [sessionID, action, data];
 			writeLog(text=arrayToList(output, ";"), file=logName);
@@ -175,7 +188,8 @@ component {
 		var timeoutSeconds = defaultTimeoutSeconds;
 
 		if (!isNewSession) {
-			timeoutSeconds = store.get(sessionID, "SESS_TIMEOUT", 0);
+			timeoutSeconds = get("SESS_TIMEOUT", 0);
+			doLog("getting session timeout", timeoutSeconds);
 		}
 
 		if (!isNumeric(timeoutSeconds) || timeoutSeconds < 1) {
@@ -200,11 +214,12 @@ component {
 			}
 		}
 
-		doLog("touch", {isNewSession: isNewSession, expires: expires});
+		doLog("touch", {isNewSession: isNewSession, expires: expires, timeoutSeconds: timeoutSeconds});
 	}
 
 	function setSessionTimeout (required numeric timeoutSeconds) {
-		set('SESS_TIMEOUT', timeoutSeconds, false);
+		doLog("setSessionTimeout", timeoutSeconds);
+		set('SESS_TIMEOUT', timeoutSeconds);
 		touch();
 		return this;
 	}
@@ -341,7 +356,7 @@ component {
 
 		request.sess_cache[key] = serializedValue;
 
-		doLog("set", {key: key, value: serializedValue});
+		doLog("set", {key: key, value: value});
 		return store.set(getSessionID(), key, serializedValue);
 	}
 
