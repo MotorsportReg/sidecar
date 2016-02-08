@@ -82,9 +82,12 @@ component extends="testbox.system.BaseSpec" {
 				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "Should have 1 session");
 				expect(application.sess._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
 
+				var sessionID = application.sess._getAllSessions()[1];
+
 				application.sess.destroy();
 
-				expect(arrayLen(application.sess._getAllSessions())).toBe(0, "the one session should be gone");
+				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "should be a new session started");
+
 				expect(application.sess._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
 			});
 
@@ -101,7 +104,7 @@ component extends="testbox.system.BaseSpec" {
 
 				expect(application.sess.get("foo", "default", true)).toBe("default");
 
-				expect(arrayLen(application.sess._getAllSessions())).toBe(0, "the one session should be gone");
+				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "should be a new session started");
 				expect(application.sess._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
 
 				application.sess.set("foo", "bar");

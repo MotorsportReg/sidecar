@@ -17,6 +17,7 @@ component {
 		//defaults
 		variables.logName = "cf_sess";
 		variables.debugEnabled = false;
+		variables.debugLogLevel = "FULL";
 		variables.defaultTimeoutSeconds = 60 * 60;
 		variables.oldSecret = "old-super-secret-passphrase";
 		variables.newSecret = "new-super-secret-passphrase";
@@ -54,9 +55,14 @@ component {
 		return int(unixTimeMillis() / 1000);
 	}
 
-	function enableDebugMode (string logName = variables.logName) {
+	function enableDebugMode (string logName = variables.logName, string logLevel = "FULL") {
 		variables.logName = arguments.logName;
 		variables.debugEnabled = true;
+
+		if (arrayFindNoCase(["FULL","BASIC"], arguments.logLevel)) {
+			variables.debugLogLevel = ucase(arguments.logLevel);
+			doLog("debugLogLevel set to " & variables.debugLogLevel);
+		}
 		return this;
 	}
 
@@ -72,17 +78,27 @@ component {
 
 	private function doLog (string action = "", any data = "", string sessionID = getSessionID(false)) {
 		if (debugEnabled) {
-			if (!isSimpleValue(data)) {
-				if (isBinary(data)) {
-					data = "{{binary data}}";
-				} else if (isStruct(data) && structKeyExists(data, "value") && isbinary(data.value)) {
-					data.value = "{{binary data}}";
-					data = serializeJSON(data);
-				} else {
-					data = serializeJSON(data);
+			if (debugLogLevel == "FULL") {
+				if (!isSimpleValue(data)) {
+					if (isBinary(data)) {
+						data = "{{binary data}}";
+					} else if (isStruct(data) && structKeyExists(data, "value") && isbinary(data.value)) {
+						data.value = "{{binary data}}";
+						data = serializeJSON(data);
+					} else {
+						data = serializeJSON(data);
+					}
 				}
+				var output = [sessionID, action, data];
+			} else {
+				var key = "";
+				if (isStruct(data) && structKeyExists(data, "key")) {
+					key = data.key;
+				}
+
+				var output = [left(sessionID, 5), action, key];
 			}
-			var output = [sessionID, action, data];
+
 			writeLog(text=arrayToList(output, ";"), file=logName);
 		}
 	}
@@ -205,6 +221,7 @@ component {
 		store.touch(getSessionID(), unixtime() + (timeoutSeconds));
 
 		if (isNewSession) {
+			doLog("sessionStartCallback");
 			var startData = sessionStartCallback();
 			if (!isNull(startData) && isStruct(startData)) {
 				for (var key in startData) {
@@ -243,6 +260,7 @@ component {
 	//user should call this in Application.cfc:onRequestEnd() for any request that they called the
 	//requestStartHandler for at least
 	function requestEndHandler () {
+		doLog("requestEndHandler");
 		purgeSessions();
 	}
 
@@ -300,8 +318,10 @@ component {
 			return defaultValue;
 		}
 		request.sess_cache[key] = out;
+
+		out = variables.deserializer(out);
 		doLog("get", {key: key, output: out, defaultValue: defaultValue, fromCache: fromCache});
-		return variables.deserializer(out);
+		return out;
 	}
 
 	function getEntireSession() {
@@ -379,7 +399,9 @@ component {
 		clearRequestSessionCache();
 		var sessionID = getSessionID(throwIfInvalid = false);
 		if (!len(sessionID)) return false;
-		return store.destroy(sessionID);
+		var result = store.destroy(sessionID);
+		touch(isNewSession=true);
+		return result;
 	}
 
 	function getSessionID (boolean throwIfInvalid = true) {
