@@ -1,6 +1,15 @@
 
 #Sidecar - external session management and storage for ColdFusion
 
+## Dependencies
+This project depends on the following projects:
+
+[cfml-redlock](https://github.com/MotorsportReg/cfml-redlock)
+[cfredis](https://github.com/MWers/cfredis)
+[jedis](https://github.com/xetorthio/jedis)
+[Apache Commons Pool](https://commons.apache.org/proper/commons-pool/download_pool.cgi)
+
+
 ##Support
 Adobe ColdFusion 10+, Lucee 4.5+
 
