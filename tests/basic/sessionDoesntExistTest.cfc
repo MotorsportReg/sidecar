@@ -8,12 +8,12 @@ component extends="testbox.system.BaseSpec" {
 
 
 	function beforeAll () {
-		application.sess._wipe_all();
-		structDelete(request, application.sess.getCookieOptions().cookieName);
+		application.sidecar._wipe_all();
+		structDelete(request, application.sidecar.getCookieOptions().cookieName);
 	}
 
 	function afterAll () {
-		application.sess._wipe_all();
+		application.sidecar._wipe_all();
 	}
 
 	function run () {
@@ -23,13 +23,13 @@ component extends="testbox.system.BaseSpec" {
 
 			it("should not allow you to set anything", function() {
 				expect(function() {
-					application.sess.set("foo", "bar");
+					application.sidecar.set("foo", "bar");
 				}).toThrow();
 
 			});
 			it("should allow destroy() without a session", function() {
 				expect(function() {
-					application.sess.destroy();
+					application.sidecar.destroy();
 				}).notToThrow();
 			});
 

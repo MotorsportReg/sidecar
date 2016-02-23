@@ -16,18 +16,18 @@ component extends="testbox.system.BaseSpec" {
 	function run () {
 
 		describe("malformed cookie", function () {
-			//this relies on the application.cfc having something that runs before the sess.requestStartHandler
+			//this relies on the application.cfc having something that runs before the sidecar.requestStartHandler
 			//to copy the original cookie into a request struct
 
 			it("should have been a malformed cookie coming in, but a valid session cookie now", function() {
 				expect(request).toHaveKey("originalCookieStruct");
-				expect(request.originalCookieStruct).toHaveKey("sess_sid");
-				expect(listLen(request.originalCookieStruct.sess_sid, ".")).notToBe(2);
+				expect(request.originalCookieStruct).toHaveKey("sidecar_sid");
+				expect(listLen(request.originalCookieStruct.sidecar_sid, ".")).notToBe(2);
 
-				expect(request).toHaveKey("sess_sid");
-				expect(request.sess_sid).notToBeEmpty();
-				expect(listFirst(cookie.sess_sid, ".")).toBe(request.sess_sid);
-				expect(request.sess_sid).toBe(application.sess.getSessionID());
+				expect(request).toHaveKey("sidecar_sid");
+				expect(request.sidecar_sid).notToBeEmpty();
+				expect(listFirst(cookie.sidecar_sid, ".")).toBe(request.sidecar_sid);
+				expect(request.sidecar_sid).toBe(application.sidecar.getSessionID());
 
 			});
 

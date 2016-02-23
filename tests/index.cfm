@@ -7,7 +7,7 @@ any cookies returned will be passed to the subsequent requests.
 
 	steps = [
 		{
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.newSessionTest&reinit=true",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.newSessionTest&reinit=true",
 			before:	function(index) {
 				cookies = {};
 				writeoutput("before step " & index);
@@ -19,7 +19,7 @@ any cookies returned will be passed to the subsequent requests.
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.existingSessionTest",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.existingSessionTest",
 			before: function(index) {
 				writeoutput("before step " & index);
 				//writedump(cookies);
@@ -30,11 +30,11 @@ any cookies returned will be passed to the subsequent requests.
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.malformedCookieTest",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.malformedCookieTest",
 			before: function(index) {
 				writeoutput("before step " & index);
 
-				cookies.sess_sid["value"] = "foo";
+				cookies.sidecar_sid["value"] = "foo";
 				//writedump(cookies);
 			},
 			after: function (index) {
@@ -43,7 +43,7 @@ any cookies returned will be passed to the subsequent requests.
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.sessionExpirationTests",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.sessionExpirationTests",
 			before: function(index) {
 				writeoutput("before step " & index);
 				//writedump(cookies);
@@ -54,7 +54,7 @@ any cookies returned will be passed to the subsequent requests.
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.sessionDoesntExistTest",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.sessionDoesntExistTest",
 			before: function(index) {
 				writeoutput("before step " & index);
 				//writedump(cookies);
@@ -65,7 +65,7 @@ any cookies returned will be passed to the subsequent requests.
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=Doc&target=tests.basic.cookieOptionsTest",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.cookieOptionsTest",
 			before: function(index) {
 				writeoutput("before step " & index);
 				//clear out existing cookies
@@ -74,7 +74,7 @@ any cookies returned will be passed to the subsequent requests.
 			},
 			after: function (index) {
 				writeoutput("after step " & index);
-				writedump(cookies);
+				//writedump(cookies);
 			}
 		}
 	];

@@ -1,5 +1,5 @@
 component skip="true" {
-	this.name = "cf-sess-tests-" & "basic-" & hash(getCurrentTemplatePath());
+	this.name = "cf-sidecar-tests-" & "basic-" & hash(getCurrentTemplatePath());
 
 	this.mappings["/lib"] = expandPath("../../lib");
 	this.mappings["/com"] = expandPath("../../com");
@@ -61,18 +61,18 @@ component skip="true" {
 
 
 		var store = new com.redis_session_store(redis);
-		var sess = new com.cf_sess();
-			sess.setSessionStorage(store);
-			sess.setSecrets("3", "4");
-			sess.onSessionStart(function() {
+		var sidecar = new com.sidecar();
+			sidecar.setSessionStorage(store);
+			sidecar.setSecrets("3", "4");
+			sidecar.onSessionStart(function() {
 				request.sessionStarted = true;
 			});
-			sess.setDefaultSessionTimeout(5); // 5 seconds
-			sess.enableDebugMode();
+			sidecar.setDefaultSessionTimeout(5); // 5 seconds
+			sidecar.enableDebugMode();
 
 
 		lock scope="application" type="exclusive" timeout="1" throwOnTimeout=true {
-			application.sess = sess;
+			application.sidecar = sidecar;
 		}
 
 	}
@@ -115,7 +115,7 @@ component skip="true" {
 		//copy cookie struct into request for tests to examine
 		request.originalCookieStruct = duplicate(cookie);
 
-		application.sess.requestStartHandler();
+		application.sidecar.requestStartHandler();
 
 		//returning false would stop processing the request
 		return true;
@@ -127,7 +127,7 @@ component skip="true" {
 		//you cannot access the variables scope
 		//you CAN access the request scope
 
-		application.sess.requestEndHandler();
+		application.sidecar.requestEndHandler();
 	}
 
 

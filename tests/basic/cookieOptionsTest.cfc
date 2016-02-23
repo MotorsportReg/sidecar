@@ -7,12 +7,12 @@ component extends="testbox.system.BaseSpec" {
 
 
 	function beforeAll () {
-		application.sess._wipe_all();
-		structDelete(request, application.sess.getCookieOptions().cookieName);
+		application.sidecar._wipe_all();
+		structDelete(request, application.sidecar.getCookieOptions().cookieName);
 
-		application.sess.setCookieOptions(cookieName="someUniqueCookieName");
+		application.sidecar.setCookieOptions(cookieName="someUniqueCookieName");
 
-		application.sess.requestStartHandler();
+		application.sidecar.requestStartHandler();
 	}
 
 	function afterAll () {
@@ -28,7 +28,7 @@ component extends="testbox.system.BaseSpec" {
 				expect(request).toHaveKey("someUniqueCookieName");
 				expect(request.someUniqueCookieName).notToBeEmpty();
 				expect(listFirst(cookie.someUniqueCookieName, ".")).toBe(request.someUniqueCookieName);
-				expect(request.someUniqueCookieName).toBe(application.sess.getSessionID());
+				expect(request.someUniqueCookieName).toBe(application.sidecar.getSessionID());
 
 			});
 

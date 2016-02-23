@@ -1,4 +1,9 @@
 
+#Sidecar - external session management and storage for ColdFusion
+
+##Support
+Adobe ColdFusion 10+, Lucee 4.5+
+
 ##Todo:
 
 [ ] `setCookieOptions()` testing, especially setting a custom cookie name

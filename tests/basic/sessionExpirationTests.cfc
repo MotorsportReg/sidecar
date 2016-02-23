@@ -10,7 +10,7 @@ component extends="testbox.system.BaseSpec" {
 	}
 
 	function afterAll () {
-		application.sess._wipe_all();
+		application.sidecar._wipe_all();
 	}
 
 	function run () {
@@ -20,96 +20,96 @@ component extends="testbox.system.BaseSpec" {
 
 			//this relies on the session timeout being 5 seconds
 			it("should cleanup all expired sessions", function() {
-				application.sess.requestEndHandler();
+				application.sidecar.requestEndHandler();
 
-				expect(application.sess._getAllSessions()).notToBeEmpty("should have some existing sessions");
-				expect(application.sess._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
+				expect(application.sidecar._getAllSessions()).notToBeEmpty("should have some existing sessions");
+				expect(application.sidecar._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
 
 				sleep(6 * 1000);
 
-				expect(application.sess._getExpiredSessions()).notToBeEmpty("There should now be some session to clean up");
+				expect(application.sidecar._getExpiredSessions()).notToBeEmpty("There should now be some session to clean up");
 
-				application.sess.requestEndHandler();
+				application.sidecar.requestEndHandler();
 
 				//all sessions should be gone
-				expect(application.sess._getAllSessions()).toBeEmpty("all session should be gone at this point");
-				expect(application.sess._getExpiredSessions()).toBeEmpty("no sessions means no expired sessions");
+				expect(application.sidecar._getAllSessions()).toBeEmpty("all session should be gone at this point");
+				expect(application.sidecar._getExpiredSessions()).toBeEmpty("no sessions means no expired sessions");
 
 			});
 
 
 			it("should allow us to set a custom expiration on a session by session basis", function() {
 
-				application.sess.requestEndHandler();
+				application.sidecar.requestEndHandler();
 
-				application.sess.requestStartHandler();
+				application.sidecar.requestStartHandler();
 
-				application.sess.setSessionTimeout(10); //10 seconds
+				application.sidecar.setSessionTimeout(10); //10 seconds
 
-				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "Should have 1 session");
-				expect(application.sess._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
+				expect(arrayLen(application.sidecar._getAllSessions())).toBe(1, "Should have 1 session");
+				expect(application.sidecar._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
 
 				sleep(6 * 1000);
 
 				//this shouldnt be long enough to expire that session
-				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "Should have 1 session");
-				var expiredSessions = application.sess._getExpiredSessions();
+				expect(arrayLen(application.sidecar._getAllSessions())).toBe(1, "Should have 1 session");
+				var expiredSessions = application.sidecar._getExpiredSessions();
 				if (arrayLen(expiredSessions) != 0) {
 					writedump(unixTime());
-					writedump(application.sess.getEntireSession());
+					writedump(application.sidecar.getEntireSession());
 					writedump(request);
 					writedump(expiredSessions);abort;
 				}
-				expect(application.sess._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
+				expect(application.sidecar._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
 
 				sleep(5 * 1000);
 
-				expect(application.sess._getExpiredSessions()).notToBeEmpty("There should now be some session to clean up");
+				expect(application.sidecar._getExpiredSessions()).notToBeEmpty("There should now be some session to clean up");
 
-				application.sess.requestEndHandler();
+				application.sidecar.requestEndHandler();
 
 				//all sessions should be gone
-				expect(application.sess._getAllSessions()).toBeEmpty("all session should be gone at this point");
-				expect(application.sess._getExpiredSessions()).toBeEmpty("no sessions means no expired sessions");
+				expect(application.sidecar._getAllSessions()).toBeEmpty("all session should be gone at this point");
+				expect(application.sidecar._getExpiredSessions()).toBeEmpty("no sessions means no expired sessions");
 
 			});
 
 			it("should allow us to call destroy on a single session", function() {
-				application.sess.requestEndHandler();
+				application.sidecar.requestEndHandler();
 
-				application.sess.requestStartHandler();
+				application.sidecar.requestStartHandler();
 
-				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "Should have 1 session");
-				expect(application.sess._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
+				expect(arrayLen(application.sidecar._getAllSessions())).toBe(1, "Should have 1 session");
+				expect(application.sidecar._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
 
-				var sessionID = application.sess._getAllSessions()[1];
+				var sessionID = application.sidecar._getAllSessions()[1];
 
-				application.sess.destroy();
+				application.sidecar.destroy();
 
-				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "should be a new session started");
+				expect(arrayLen(application.sidecar._getAllSessions())).toBe(1, "should be a new session started");
 
-				expect(application.sess._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
+				expect(application.sidecar._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
 			});
 
 
 			it("should allow us to still use a session after it has been destroyed", function() {
-				application.sess.requestEndHandler();
+				application.sidecar.requestEndHandler();
 
-				application.sess.requestStartHandler();
+				application.sidecar.requestStartHandler();
 
-				application.sess.set("foo", "bar");
-				expect(application.sess.get("foo", "default", true)).toBe("bar");
+				application.sidecar.set("foo", "bar");
+				expect(application.sidecar.get("foo", "default", true)).toBe("bar");
 
-				application.sess.destroy();
+				application.sidecar.destroy();
 
-				expect(application.sess.get("foo", "default", true)).toBe("default");
+				expect(application.sidecar.get("foo", "default", true)).toBe("default");
 
-				expect(arrayLen(application.sess._getAllSessions())).toBe(1, "should be a new session started");
-				expect(application.sess._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
+				expect(arrayLen(application.sidecar._getAllSessions())).toBe(1, "should be a new session started");
+				expect(application.sidecar._getExpiredSessions()).toBeEmpty("There still shouldn't be any sessions yet to clean up");
 
-				application.sess.set("foo", "bar");
+				application.sidecar.set("foo", "bar");
 
-				expect(application.sess.get("foo", "default", true)).toBe("bar");
+				expect(application.sidecar.get("foo", "default", true)).toBe("bar");
 			});
 
 		});

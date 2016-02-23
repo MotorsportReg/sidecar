@@ -15,7 +15,7 @@ component {
 	function init () {
 
 		//defaults
-		variables.logName = "cf_sess";
+		variables.logName = "sidecar";
 		variables.debugEnabled = false;
 		variables.debugLogLevel = "FULL";
 		variables.defaultTimeoutSeconds = 60 * 60;
@@ -31,7 +31,7 @@ component {
 		};
 		//todo: come up with a better default for the genSessionID function
 		variables.genSessionID = function() { return createUUID(); };
-		variables.cookieName = "sess_sid";
+		variables.cookieName = "sidecar_sid";
 		variables.cookieOptions = {
 			path: "/",
 			httpOnly: true,
@@ -130,7 +130,7 @@ component {
 	}
 
 	function setCookieOptions (
-			string cookieName = "sess_sid",
+			string cookieName = "sidecar_sid",
 			string path = "/",
 			boolean httpOnly = true,
 			boolean secure = false,
@@ -204,7 +204,7 @@ component {
 		var timeoutSeconds = defaultTimeoutSeconds;
 
 		if (!isNewSession) {
-			timeoutSeconds = get("SESS_TIMEOUT", 0);
+			timeoutSeconds = get("SIDECAR_TIMEOUT", 0);
 			doLog("getting session timeout", timeoutSeconds);
 		}
 
@@ -216,7 +216,7 @@ component {
 
 		writeCookie(expires, newSecret);
 
-		set('SESS_TIMEOUT', timeoutSeconds);
+		set('SIDECAR_TIMEOUT', timeoutSeconds);
 
 		store.touch(getSessionID(), unixtime() + (timeoutSeconds));
 
@@ -236,7 +236,7 @@ component {
 
 	function setSessionTimeout (required numeric timeoutSeconds) {
 		doLog("setSessionTimeout", timeoutSeconds);
-		set('SESS_TIMEOUT', timeoutSeconds);
+		set('SIDECAR_TIMEOUT', timeoutSeconds);
 		touch();
 		return this;
 	}
@@ -290,13 +290,13 @@ component {
 	}
 
 	private function ensureRequestSessionCache () {
-		if (isNull(request.sess_cache) || !isStruct(request.sess_cache)) {
+		if (isNull(request.sidecar_cache) || !isStruct(request.sidecar_cache)) {
 			clearRequestSessionCache();
 		}
 	}
 
 	private function clearRequestSessionCache () {
-		request.sess_cache = structNew();
+		request.sidecar_cache = structNew();
 	}
 
 	function get (required string key, any defaultValue = -1, boolean bypassRequestCache = false) {
@@ -307,9 +307,9 @@ component {
 		key = ucase(key);
 		var out = "";
 		var fromCache = false;
-		if (!bypassRequestCache && structKeyExists(request.sess_cache, key)) {
+		if (!bypassRequestCache && structKeyExists(request.sidecar_cache, key)) {
 			fromCache = true;
-			out = request.sess_cache[key];
+			out = request.sidecar_cache[key];
 		} else {
 			out = store.get(getSessionID(), key);
 		}
@@ -317,7 +317,7 @@ component {
 			doLog("get", {key: key, output: defaultValue, defaultValue: defaultValue, fromCache: fromCache});
 			return defaultValue;
 		}
-		request.sess_cache[key] = out;
+		request.sidecar_cache[key] = out;
 
 		out = variables.deserializer(out);
 		doLog("get", {key: key, output: out, defaultValue: defaultValue, fromCache: fromCache});
@@ -334,7 +334,7 @@ component {
 	}
 
 	function _getEntireRequestCache() {
-		var data = request.sess_cache;
+		var data = request.sidecar_cache;
 		var output = structNew();
 		for (var key in data) {
 			output[key] = variables.deserializer(data[key]);
@@ -346,7 +346,7 @@ component {
 		ensureRequestSessionCache();
 		key = ucase(key);
 		var out = false;
-		if (structKeyExists(request.sess_cache, key)) {
+		if (structKeyExists(request.sidecar_cache, key)) {
 			doLog("has", {key: key, output: true, fromCache: true});
 			return true;
 		}
@@ -360,9 +360,9 @@ component {
 		key = ucase(key);
 		var out = false;
 		var inCache = false;
-		if (structKeyExists(request.sess_cache, key)) {
+		if (structKeyExists(request.sidecar_cache, key)) {
 			inCache = true;
-			structDelete(request.sess_cache, key);
+			structDelete(request.sidecar_cache, key);
 		}
 		out = store.clear(getSessionID(), key);
 		doLog("clear", {key: key, output: out, inCache: inCache});
@@ -374,7 +374,7 @@ component {
 		key = ucase(key);
 		var serializedValue = variables.serializer(value);
 
-		request.sess_cache[key] = serializedValue;
+		request.sidecar_cache[key] = serializedValue;
 
 		doLog("set", {key: key, value: value});
 		return store.set(getSessionID(), key, serializedValue);
@@ -386,7 +386,7 @@ component {
 		for (var key in collection) {
 			key = ucase(key);
 			coll[key] = variables.serializer(collection[key]);
-			request.sess_cache[key] = coll[key];
+			request.sidecar_cache[key] = coll[key];
 		}
 
 		doLog("setCollection", {collection: coll});
