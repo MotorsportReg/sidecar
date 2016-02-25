@@ -1,0 +1,14 @@
+app:
+  image: finalcut/coldfusion10
+  ports:
+    - "80:80"
+  volumes:
+   - .:/var/www
+  volumes_from:
+   - testbox
+  links:
+   - redis
+testbox:
+  image: ryanguill/testbox:latest
+redis:
+  image: redis:latest

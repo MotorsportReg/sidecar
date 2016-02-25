@@ -26,5 +26,4 @@ WEB-INF/
 testbox/
 
 #docker
-docker-compose.yml
 Dockerfile

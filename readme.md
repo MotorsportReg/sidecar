@@ -16,8 +16,8 @@ Adobe ColdFusion 10+, Lucee 4.5+
 
 ##Todo:
 
-[ ] `setCookieOptions()` testing, especially setting a custom cookie name
-[ ] `_getEntireRequestCache()` testing
+- [ ] `setCookieOptions()` testing, especially setting a custom cookie name
+- [ ] `_getEntireRequestCache()` testing
 
 ## How to run the tests
 
@@ -25,6 +25,14 @@ Adobe ColdFusion 10+, Lucee 4.5+
 2. Unzip the testbox/ folder into the root of the application (as a peer to tests)
 3. The tests expect a redis instance to be running on localhost:6379, edit the top of /tests/basicTest.cfc if your instance is different
 3. run /tests/index.cfm - will run the individual tests under basic remotely to be able to set the cookie headers
+
+Or, if you use docker / docker-compose, you can use the included docker-compose file.
+
+1. Clone the project.
+2. `docker-compose up -d`
+3. Hit the docker ip address on port 80.
+
+You could swap out the `app` service with lucee or other coldfusion version if you would rather use that.
 
 ## License
 
