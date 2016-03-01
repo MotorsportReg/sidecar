@@ -9,6 +9,6 @@ before_install:
   - docker-compose up -d
 
 script: >
-  testResults="echo $(curl -i http://localhost/tests/index.cfm?format=travis)";
+  testResults="echo $(curl -i http://127.0.0.1/tests/index.cfm?format=travis)";
   echo "$testResults";
-  if grep -i "http/1.1 500" <<< $testResults; then exit 1; fi
+  if ! grep -i "http/1.1 200" <<< $testResults; then exit 1; fi
