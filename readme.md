@@ -1,6 +1,8 @@
 
 #Sidecar - external session management and storage for ColdFusion
 
+[ ![Codeship Status for MotorsportReg/sidecar](https://codeship.com/projects/e2f0a470-c060-0133-5fa9-0a9636267e9d/status?branch=master)](https://codeship.com/projects/137244)
+
 ## Dependencies
 This project depends on the following projects:
 
