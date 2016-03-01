@@ -3,77 +3,96 @@ The idea here is that the first request will not have any cookies, so call the t
 any cookies returned will be passed to the subsequent requests.
 --->
 
+<cfparam name="url.format" default="html" />
+
+
+
 <cfscript>
+
+	if (!arrayFindNoCase(["html","travis"], url.format)) {
+		url.format = "html";
+	}
+
+	reporter = "simple";
+
+	switch (url.format) {
+		case "travis" :
+			reporter = "json";
+			break;
+		default :
+			reporter = "simple";
+			break;
+	}
 
 	steps = [
 		{
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.newSessionTest&reinit=true",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=#reporter#&target=tests.basic.newSessionTest&reinit=true",
 			before:	function(index) {
 				cookies = {};
-				writeoutput("before step " & index);
+				//writeoutput("before step " & index);
 				//writedump(cookies);
 			},
 			after: function (index) {
-				writeoutput("after step " & index);
+				//writeoutput("after step " & index);
 				//writedump(cookies);
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.existingSessionTest",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=#reporter#&target=tests.basic.existingSessionTest",
 			before: function(index) {
-				writeoutput("before step " & index);
+				//writeoutput("before step " & index);
 				//writedump(cookies);
 			},
 			after: function (index) {
-				writeoutput("after step " & index);
+				//writeoutput("after step " & index);
 				//writedump(cookies);
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.malformedCookieTest",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=#reporter#&target=tests.basic.malformedCookieTest",
 			before: function(index) {
-				writeoutput("before step " & index);
+				//writeoutput("before step " & index);
 
 				cookies.sidecar_sid["value"] = "foo";
 				//writedump(cookies);
 			},
 			after: function (index) {
-				writeoutput("after step " & index);
+				//writeoutput("after step " & index);
 				//writedump(cookies);
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.sessionExpirationTests",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=#reporter#&target=tests.basic.sessionExpirationTests",
 			before: function(index) {
-				writeoutput("before step " & index);
+				//writeoutput("before step " & index);
 				//writedump(cookies);
 			},
 			after: function (index) {
-				writeoutput("after step " & index);
+				//writeoutput("after step " & index);
 				//writedump(cookies);
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.sessionDoesntExistTest",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=#reporter#&target=tests.basic.sessionDoesntExistTest",
 			before: function(index) {
-				writeoutput("before step " & index);
+				//writeoutput("before step " & index);
 				//writedump(cookies);
 			},
 			after: function (index) {
-				writeoutput("after step " & index);
+				//writeoutput("after step " & index);
 				//writedump(cookies);
 			}
 		}
 		, {
-			url:"/tests/basic/index.cfm?opt_run=true&reporter=simple&target=tests.basic.cookieOptionsTest",
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=#reporter#&target=tests.basic.cookieOptionsTest",
 			before: function(index) {
-				writeoutput("before step " & index);
+				//writeoutput("before step " & index);
 				//clear out existing cookies
 				cookies = {};
 				//writedump(cookies);
 			},
 			after: function (index) {
-				writeoutput("after step " & index);
+				//writeoutput("after step " & index);
 				//writedump(cookies);
 			}
 		}
@@ -138,42 +157,79 @@ any cookies returned will be passed to the subsequent requests.
 
 	cookies = {};
 
+	results = [];
+
+	index = 0;
+
+	for (step in steps) {
+		index++;
+
+		if (structKeyExists(step, "before")) {
+			step.before(index);
+		}
+
+		cookieString = getCookiesString(cookies);
+
+		httpService = new http(method="GET", charset="utf-8", url="http://" & cgi.server_name & step.url);
+		if (len(cookieString)) {
+			httpService.addParam(name="Cookie", type="header", value=cookieString);
+		}
+
+		httpResult = httpService.send().getPrefix();
+
+		cookies = getResponseCookies(httpResult);
+
+		arrayAppend(results, httpResult.fileContent);
+
+		if (structKeyExists(step, "after")) {
+			step.after(index);
+		}
+
+
+	}
+
+	switch (url.format) {
+		case "travis" :
+
+			overall = {
+				totalSpecs: 0,
+				totalPass: 0,
+				totalFail: 0,
+				totalError: 0
+			};
+
+			//writedump(results);
+
+			for (result in results) {
+				result = deserializeJSON(result);
+				overall.totalSpecs += result.totalSpecs;
+				overall.totalPass += result.totalPass;
+				overall.totalFail += result.totalFail;
+				overall.totalError += result.totalError;
+			}
+
+			if (overall.totalSpecs != overall.totalPass) {
+				pc = getpagecontext().getresponse();
+				pc.getresponse().setstatus(500);
+			}
+
+			writeoutput(serializeJSON(overall));
+			abort;
+
+			break;
+		default :
+
+			for (result in results) {
+				writeOutput(result);
+				writeOutput("<hr />");
+			}
+
+			break;
+	}
+
+
+
+
+
 </cfscript>
 
-<!---<cfdump var="#cgi#" abort="true"/>--->
-
-
-<cfset index = 0 />
-
-<cfloop array="#steps#" index="step">
-	<cfset index++ />
-
-	<cfif structKeyExists(step, "before")>
-		<cfset step.before(index) />
-	</cfif>
-
-	<cfset cookieString = getCookiesString(cookies) />
-
-	<!---<cfdump var="#cookieString#" abort="false"/>--->
-	<cfhttp url="http://#cgi.server_name##step.url#" method="GET" result="httpResult">
-		<cfif len(cookieString)>
-			<cfhttpparam type="header" name="Cookie" value="#cookieString#" />
-		</cfif>
-	</cfhttp>
-
-	<cfset cookies = getResponseCookies(httpResult) />
-
-	<!---<cfdump var="#cookies#" />
-	<cfdump var="#getCookiesString(cookies)#" />--->
-	<cfoutput>
-		#httpResult.fileContent#
-
-	</cfoutput>
-
-	<cfif structKeyExists(step, "after")>
-		<cfset step.after(index) />
-	</cfif>
-
-
-	<hr />
-</cfloop>
