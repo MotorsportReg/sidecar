@@ -40,7 +40,7 @@ component extends="testbox.system.BaseSpec" {
 
 			it("should let us know if a key exists or not", function() {
 				application.sidecar.set("foo", "bar");
-				var hasFoo = application.sidecar.has("foo");
+				var hasFoo = application.sidecar.has("foox");
 				expect(hasFoo).toBe(true);
 				var hasBar = application.sidecar.has("bar");
 				expect(hasBar).toBe(false);
