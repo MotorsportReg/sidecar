@@ -9,6 +9,7 @@ before_install:
   - docker-compose up -d
 
 script: >
-  testResults="echo $(curl -i http://127.0.0.1/tests/index.cfm?format=travis)";
+  docker ps;
+  testResults="echo $(curl -i http://127.0.0.1:80/tests/index.cfm?format=travis)";
   echo "$testResults";
   if ! grep -i "http/1.1 200" <<< $testResults; then exit 1; fi
