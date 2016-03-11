@@ -300,6 +300,10 @@ component {
 		return store.expired();
 	}
 
+	function info () {
+		return store.info();
+	}
+
 	private function ensureRequestSessionCache () {
 		if (isNull(request.sidecar_cache) || !isStruct(request.sidecar_cache)) {
 			clearRequestSessionCache();

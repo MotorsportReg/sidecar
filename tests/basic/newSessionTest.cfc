@@ -15,6 +15,13 @@ component extends="testbox.system.BaseSpec" {
 
 	function run () {
 
+		try {
+			writedump(application.sidecar.info());
+		} catch (any e) {
+			writedump(e);
+			abort;
+		}
+
 		describe("baseline environment", function () {
 
 			it("should have started a new session", function() {

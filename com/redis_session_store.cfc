@@ -136,6 +136,18 @@ component {
 		return arrayLen(keys);
 	}
 
+	function info () {
+		if (isNull(variables.infoScript)) {
+			//variables.infoScript = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end';
+			variables.infoScript = "
+			return redis.call('DEBUG OBJECT', 'redis-session-store__session_expires');";
+		}
+
+		return {
+			info: redis.evalFixed(infoScript, [], [prefix & "*", 100])
+		};
+	}
+
 	//cleanup routine that will delete everything from redis related to this session store, only necessary for testing!
 	function _wipe_all () {
 		var keys = redis.keys(prefix & "*");
@@ -145,6 +157,50 @@ component {
 		}
 
 		return arrayLen(keys);
+	}
+
+	private function __evalFixed (script, keys, args, cb) {
+
+		if (!isArray(keys)) {
+			keys = [keys];
+		}
+
+		var keysArray = [];
+		var i = 0;
+		for (i = 1; i <= arrayLen(keys); i++) {
+			arrayAppend(keysArray, toString(keys[i]));
+		}
+
+		if (!isArray(args)) {
+			args = [args];
+		}
+
+		var argsArray = [];
+		for (i = 1; i <= arrayLen(args); i++) {
+			arrayAppend(argsArray, toString(args[i]));
+		}
+
+		var conn = getResource();
+		/*
+		for (method in getMetadata(conn).getMethods()) {
+			writedump(method.toString());
+			writeoutput("<br />");
+		}
+		abort;
+		*/
+		var result = conn.eval(JavaCast("string", script), createObject("java", "java.util.ArrayList").init(keysArray), createObject("java", "java.util.ArrayList").init(argsArray));
+
+		returnResource(conn);
+
+		if (isNull(result)) {
+			result = '';
+		}
+
+		if (!isNull(arguments.cb)) {
+			return arguments.cb('', result);
+		}
+
+		return result;
 	}
 
 	private function __zrem_fixed (key, member) {
@@ -201,6 +257,7 @@ component {
 
 		target.__inject("zrem_fixed", variables["__zrem_fixed"], true);
 		target.__inject("hgetReturnsUndefined", variables["__hgetReturnsUndefined"], true);
+		target.__inject("evalFixed", variables["__evalFixed"], true);
 
 		target.__cleanup();
 
