@@ -68,7 +68,7 @@ component skip="true" {
 				request.sessionStarted = true;
 			});
 			sidecar.setDefaultSessionTimeout(5); // 5 seconds
-			sidecar.enableDebugMode();
+			sidecar.enableDebugMode(logLevel="FULL");
 
 
 		lock scope="application" type="exclusive" timeout="1" throwOnTimeout=true {

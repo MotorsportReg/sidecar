@@ -19,13 +19,21 @@ component extends="testbox.system.BaseSpec" {
 
 
 			application.sidecar.setPurgeFrequencySeconds(0);
+			makePublic(application.sidecar, "dolog");
 
 			//this relies on the session timeout being 5 seconds
 			it("should cleanup all expired sessions", function() {
 				application.sidecar.requestEndHandler();
+				application.sidecar.doLog("should cleanup all expired sessions");
 
-				expect(application.sidecar._getAllSessions()).notToBeEmpty("should have some existing sessions");
-				expect(application.sidecar._getExpiredSessions()).toBeEmpty("There shouldn't be any sessions yet to clean up");
+				var allSessions = application.sidecar._getAllSessions();
+				var expiredSessions = application.sidecar._getExpiredSessions();
+
+				writedump(allSessions);
+				writedump(expiredSessions);
+
+				expect(allSessions).notToBeEmpty("should have some existing sessions");
+				expect(expiredSessions).toBeEmpty("There shouldn't be any sessions yet to clean up");
 
 				sleep(6 * 1000);
 

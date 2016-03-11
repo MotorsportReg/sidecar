@@ -161,6 +161,20 @@ component {
 		}
 	}
 
+	function async (required any f) {
+		var listener = f;
+		structDelete(arguments, "f");
+
+		thread action="run" name="thread_#createUUID()#" listener=listener args=arguments emit=this {
+			try {
+				listener(argumentCollection=arguments);
+			} catch (any e) {
+				arguments.exception = e;
+				emit.dispatchError(argumentCollection=arguments);
+			}
+		}
+	}
+
 	function onSessionStart (required any f) {
 		variables.sessionStartCallback = arguments.f;
 		return this;
@@ -280,14 +294,16 @@ component {
 
 	function purgeSessions () {
 
-		var expired = store.expired();
-		doLog("purgeSessions", {expired: expired}, "");
+		async(function() {
+			var expired = store.expired();
+			doLog("purgeSessions", {expired: expired}, "");
 
-		for (var sessionID in expired) {
-			var sessionData = store.getEntireSession(sessionID);
-			sessionEndCallback(sessionData);
-			store.destroy(sessionID);
-		}
+			for (var sessionID in expired) {
+				var sessionData = store.getEntireSession(sessionID);
+				sessionEndCallback(sessionData);
+				store.destroy(sessionID);
+			}
+		});
 	}
 
 	//included for testing
