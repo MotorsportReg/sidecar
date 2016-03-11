@@ -11,6 +11,8 @@ component {
 	property struct cookieOptions;
 	property any sessionStartCallback;
 	property any sessionEndCallback;
+	property numeric purgeFrequencySeconds;
+	property numeric lastPurge;
 
 	function init () {
 
@@ -40,6 +42,8 @@ component {
 		};
 		variables.sessionStartCallback = function() {};
 		variables.sessionEndCallback = function() {};
+		variables.lastPurge = 0;
+		setPurgeFrequencySeconds(60);
 
 		return this;
 	}
@@ -148,6 +152,13 @@ component {
 		var output = duplicate(cookieOptions);
 		output.cookieName = variables.cookieName;
 		return output;
+	}
+
+	function setPurgeFrequencySeconds (required numeric value) {
+		if (value >= 0) {
+			doLog("setting purgeFrequencySeconds to #value#");
+			variables.purgeFrequencySeconds = value;
+		}
 	}
 
 	function onSessionStart (required any f) {
@@ -261,15 +272,15 @@ component {
 	//requestStartHandler for at least
 	function requestEndHandler () {
 		doLog("requestEndHandler");
-		purgeSessions();
+		if (unixTime() - lastPurge > purgeFrequencySeconds) {
+			purgeSessions();
+			lastPurge = unixTime();
+		}
 	}
 
 	function purgeSessions () {
 
 		var expired = store.expired();
-
-		//writedump(var=expired, label="expired");
-
 		doLog("purgeSessions", {expired: expired}, "");
 
 		for (var sessionID in expired) {

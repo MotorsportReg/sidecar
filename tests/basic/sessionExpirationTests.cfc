@@ -18,6 +18,8 @@ component extends="testbox.system.BaseSpec" {
 		describe("session expiration", function () {
 
 
+			application.sidecar.setPurgeFrequencySeconds(0);
+
 			//this relies on the session timeout being 5 seconds
 			it("should cleanup all expired sessions", function() {
 				application.sidecar.requestEndHandler();
