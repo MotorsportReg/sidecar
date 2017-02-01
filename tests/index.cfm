@@ -96,6 +96,17 @@ any cookies returned will be passed to the subsequent requests.
 				//writedump(cookies);
 			}
 		}
+		, {
+			url:"/tests/basic/index.cfm?opt_run=true&reporter=#reporter#&target=tests.basic.serializerTests",
+			before: function(index) {
+				//writeoutput("before step " & index);
+				//writedump(cookies);
+			},
+			after: function (index) {
+				//writeoutput("after step " & index);
+				//writedump(cookies);
+			}
+		}
 	];
 
 	function getResponseCookies (required struct response) {
