@@ -128,6 +128,11 @@ component {
 		return this;
 	}
 
+	function setDeserializerFunction (required any f) {
+		variables.deserializer = arguments.f;
+		return this;
+	}
+
 	function setGenSessionIDFunction (required any f) {
 		variables.genSessionID = arguments.f;
 		return this;
