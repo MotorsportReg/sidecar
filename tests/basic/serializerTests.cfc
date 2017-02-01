@@ -19,7 +19,7 @@ component extends="testbox.system.BaseSpec" {
 				application.sidecar.setSerializerFunction( serializeWrapper );
 				application.sidecar.setDeserializerFunction( deserializeWrapper );
 				application.sidecar.set("foo", { 'object': 'default' });
-				var foo = application.sidecar.get("foo", { 'object': 'default' });
+				var foo = application.sidecar.get("foo");
 				expect(foo).toBe({ 'object': 'default' });
 			});
 
