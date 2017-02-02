@@ -26,7 +26,7 @@ component extends="testbox.system.BaseSpec" {
 
 				expect(request).toHaveKey("sidecar_sid");
 				expect(request.sidecar_sid).notToBeEmpty();
-				expect(listFirst(cookie.sidecar_sid, ".")).toBe(request.sidecar_sid);
+				expect(reReplace(listFirst(cookie.sidecar_sid, "."), "^s\:", "")).toBe(request.sidecar_sid);
 				expect(request.sidecar_sid).toBe(application.sidecar.getSessionID());
 
 			});

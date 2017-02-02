@@ -51,7 +51,7 @@ component extends="testbox.system.BaseSpec" {
 			});
 
 			it("should have the same sessionID as in the cookie", function() {
-				expect(application.sidecar.getSessionID()).toBe(listFirst(cookie.sidecar_sid, "."));
+				expect(application.sidecar.getSessionID()).toBe(reReplace(listFirst(cookie.sidecar_sid, "."), "^s\:", ""));
 			});
 
 			it("should allow you to store a collection at once", function() {

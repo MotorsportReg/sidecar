@@ -185,9 +185,10 @@ component {
 			touch(genSessionID(), true);
 			doLog("NoExistingSession");
 		} else {
-			var val = unsign(newSecret, cookie[variables.cookieName]);
+			var cookieVal = readCookie();
+			var val = unsign(newSecret, cookieVal);
 			if (val == false) {
-				val = unsign(oldSecret, cookie[variables.cookieName]);
+				val = unsign(oldSecret, cookieVal);
 				if (val == false) {
 					//cookie exists, but is invalid session
 					//delete existing cookie
@@ -257,8 +258,12 @@ component {
 		return this;
 	}
 
+	private function readCookie(){
+		return reReplace(cookie[variables.cookieName], '^s\:', '');
+	}
+
 	private function writeCookie (expires, secret) {
-		cookie[variables.cookieName] = {value: sign(secret, request[variables.cookieName])
+		cookie[variables.cookieName] = {value: 's:' & sign(secret, request[variables.cookieName])
 				, path: cookieOptions.path
 				, httpOnly: cookieOptions.httpOnly
 				, secure: cookieOptions.secure
@@ -435,7 +440,7 @@ component {
 			input = join(input);
 		}
 
-		return input & "." & toBase64(binaryDecode(hmac(replace(input, "\n", chr(10), "all"), secret, "HmacSHA1"), "hex"));
+		return input & "." &  rereplace(toBase64(binaryDecode(hmac(replace(input, "\n", chr(10), "all"), secret, "HmacSHA256"), "hex"), "utf-8"), "\=+$", "");
 	}
 
 	private string function unsign (required string secret, required string val) {
