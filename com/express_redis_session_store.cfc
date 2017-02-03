@@ -4,10 +4,11 @@ component {
 	property string prefix;
 	property any redlock;
 
-	function init (required any redis, string prefix = "redis-session-store_") {
+	function init (required any redis, string prefix = "redis-session-store_", string request_key = "$_express_redis_session_data_$") {
 		variables.redis = extendCFRedis(arguments.redis);
 		variables.prefix = arguments.prefix;
-		variables.request_key = "$_express_redis_session_data_$";
+		variables.request_key = arguments.request_key;
+		variables.TTL = 60*60; //same default as sidecar
 
 		variables.redlock = new redlock([redis], {
 				retryCount: 2,
@@ -29,12 +30,16 @@ component {
 		return prefix & sessionID & "_lock";
 	}
 
+	function setTTL( required numeric ttlSeconds ){
+		variables.TTL = ttlSeconds;
+		return this;
+	}
+
 	function destroy (required string sessionID) {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
 			result = redis.del(prefix & sessionID);
-			redis.zrem_fixed(prefix & "_session_expires", sessionID);
 			structDelete( request, variables.request_key );
 			lock.unlock();
 		});
@@ -92,6 +97,8 @@ component {
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
 			result = redis.set(prefix & sessionID, serializeJson( request[variables.request_key] ));
+			//express-session uses Redis TTL instead of manually purging
+			redis.expire(prefix & sessionID, variables.TTL);
 			lock.unlock();
 		});
 		return result;
@@ -130,25 +137,22 @@ component {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
-			//result = redis.expire(prefix & sessionID, expires);
-			set(sessionID, "_session_expires", expires);
-			redis.zadd(prefix & "_session_expires", expires, sessionID);
+			result = redis.expireAt(prefix & sessionID, expires);
 			lock.unlock();
 		});
 		return result;
 	}
 
 	function all () {
-		return redis.zrangeByScore(prefix & "_session_expires", "-inf", "+inf");
+		return [];
 	}
 
 	function expired (numeric expiredBefore = unixTime()) {
-		return redis.zrangeByScore(prefix & "_session_expires", "0", expiredBefore);
+		return [];
 	}
 
 	function length () {
-		var keys = redis.hKeys(prefix & "_session_expires");
-		return arrayLen(keys);
+		return arrayLen(all());
 	}
 
 	//cleanup routine that will delete everything from redis related to this session store, only necessary for testing!

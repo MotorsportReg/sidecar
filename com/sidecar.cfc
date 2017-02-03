@@ -109,6 +109,9 @@ component {
 
 	function setDefaultSessionTimeout (required numeric timeoutSeconds) {
 		variables.defaultTimeoutSeconds = arguments.timeoutSeconds;
+		if ( structKeyExists(store, "setTTL")){
+			variables.store.setTTL( variables.defaultTimeoutSeconds );
+		}
 		return this;
 	}
 
@@ -120,6 +123,9 @@ component {
 
 	function setSessionStorage (required any sessionStorage) {
 		variables.store = arguments.sessionStorage;
+		if ( structKeyExists(store, "setTTL")){
+			variables.store.setTTL( variables.defaultTimeoutSeconds );
+		}
 		return this;
 	}
 
