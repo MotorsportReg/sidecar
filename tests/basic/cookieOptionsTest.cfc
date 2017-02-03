@@ -27,7 +27,7 @@ component extends="testbox.system.BaseSpec" {
 
 				expect(request).toHaveKey("someUniqueCookieName");
 				expect(request.someUniqueCookieName).notToBeEmpty();
-				expect(listFirst(cookie.someUniqueCookieName, ".")).toBe(request.someUniqueCookieName);
+				expect(reReplace(listFirst(cookie.someUniqueCookieName, "."), "^s\:", "")).toBe(request.someUniqueCookieName);
 				expect(request.someUniqueCookieName).toBe(application.sidecar.getSessionID());
 
 			});
@@ -38,6 +38,21 @@ component extends="testbox.system.BaseSpec" {
 			});
 		});
 
+		describe("signatures", function () {
+
+			it("should produce the same signature as node's cookie-signature module for compat", function() {
+
+				makePublic(application.sidecar, "sign", "publicSign");
+
+				//these inputs and outputs are values that were run through node-cookie-signature to obtain reference values
+				expect( application.sidecar.publicSign( "b42527", "a" ) ).toBe("a.GgASGmQ1e95bMuS1woXgCTrIq3cVwALSUhIc0pzyz/Y");
+				expect( application.sidecar.publicSign( "b42527", "adam" ) ).toBe("adam.Jrqs4C8bgqgd5J0MBNPPGE6YFNSD9uhYFz6cY74kz1g");
+				expect( application.sidecar.publicSign( "b42527", "this is a test" ) ).toBe("this is a test.Az8Q+c+kASA7GroDGLUlzfvgMHHusWkyDgJnK1GTNIY");
+				expect( application.sidecar.publicSign( "b42527", "ryan guill is the man" ) ).toBe("ryan guill is the man.AXdjwH9BGe6qUYkN/YZTiLn6EPm3r/F+KqHPdpuBCgY");
+
+			});
+
+		});
 
 	}
 

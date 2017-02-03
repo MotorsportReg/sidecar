@@ -2,7 +2,7 @@
 The idea here is that the first request will not have any cookies, so call the tests that assume that,
 any cookies returned will be passed to the subsequent requests.
 --->
-
+<cfsetting requesttimeout="300" />
 <cfparam name="url.format" default="html" />
 
 
