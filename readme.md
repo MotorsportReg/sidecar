@@ -3,6 +3,10 @@
 
 [![Build Status](https://travis-ci.org/MotorsportReg/sidecar.svg?branch=master)](https://travis-ci.org/MotorsportReg/sidecar)
 
+## Version 1.0.0
+
+Updating version to 1.0.0 as of 2017-02-03.  If you update from a previous version there were changes that will break backwards compat of existing sessions, so when you update all of your sessions will be restarted.  You also may want to clean up your store manually just to be sure there is no sessions that hang on longer than they should.
+
 ## Dependencies
 This project depends on the following projects:
 
