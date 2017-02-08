@@ -114,7 +114,7 @@ component {
 		};
 	}
 
-	function set (required string sessionID, required string key, required string value) {
+	function set (required string sessionID, required string key, required value) {
 		ensureCachedInRequest(sessionID);
 		request[variables.request_key][key] = value;
 		//write to redis
