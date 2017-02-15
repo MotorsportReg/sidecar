@@ -16,14 +16,55 @@ This project depends on the following projects:
 - [Apache Commons Pool](https://commons.apache.org/proper/commons-pool/download_pool.cgi)
 
 
-##Support
+## Support
 Adobe ColdFusion 10+, Lucee 4.5+
 
 
-##Todo:
+## Todo:
 
 - [ ] `setCookieOptions()` testing, especially setting a custom cookie name
 - [ ] `_getEntireRequestCache()` testing
+
+## Configuring your application and using Sidecar
+
+Coming soon
+
+## Express-session compatibility
+
+While Sidecar was heavily inspired by [express-session](https://github.com/expressjs/session), it was not originally written as a direct port and is not compatible using the default settings. In order to be able to read and write your CFML+Sidecar session data, on Redis, from a Node.js application using express-session, you need to use the included **express_redis_session_store.cfc** store adapter instead of the usual **redis_session_store.cfc**.
+
+There is only one other change necessary from normal Sidecar usage: Your Sidecar (de)serializer functions need to be no-operation functions to prevent double serialization:
+
+```js
+sidecar.setSerializerFunction( function(d){ return d; } );
+sidecar.setDeserializerFunction( function(d){ return d; } );
+```
+
+### Trade-offs for express-session compatibility
+
+- Slightly less time-efficient
+- Loss of `onSessionEnd()` callback support
+- Loss of `_getAllSessions()` method
+
+**Slightly less time-efficient**
+
+The express-session compatible store adapter will store your data in the same way that express-session does. From CFML platforms, this approach is slightly less efficient than Sidecar's usual approach. The standard adapter will use a Redis hash for each session, with keys for each session variable; and the express-session approach is to use a Redis string key containing the session data as an object (CFML struct) stored serialized to JSON.
+
+The express-session adapter will only read the session data from redis once per request, the first time it is requested, and caches it in the request scope. All writes update both Redis and the request scope cache. If you need to set multiple keys you can use `sidecar.setCollection()` to make this more efficient: 1 Redis write per collection, rather than per key.
+
+This also means that unlike CFML sessions, data set during a request is not shared with other requests until the end of the request, not at the time it is being set instead of the way the redis_session_store sets and gets from redis when requested and so the updated value would be available to other requests immediately.  Also the redis_session_store only retrieves values in the session that you request specifically, the expression-session compatible version will retrieve all session values at the beginning of the request.  
+
+While the express-session store adapter is slightly less efficient than standard Sidecar usage, this can be an acceptable trade-off if you need session data to be portable between Node.js and CFML.
+
+**Loss of `onSessionEnd()` callback support**
+
+Express-session typically relies on Redis TTL to expunge expired sessions; whereas the standard Sidecar approach expunges them manually. The express-session compatible store adapter does away with the session index and expiration keys in favor of a Redis TTL approach. However, since Sidecar is no longer evicting expired sessions manually, it can no longer call the `onSessionEnd()` callback.
+
+**Loss of `_getAllSessions()` method**
+
+As a result of removing the session expiration index, there is now no way to get a list of all active session id's. While part of Sidecar's public API, at present this method is only used for testing Sidecar.
+
+Note: an alternative would be to use a different store with your express-session that matched sidecar semantics instead - doing so and researching the pros and cons of such a solution is currently left as an exercise for the reader.
 
 ## How to run the tests
 
