@@ -8,7 +8,7 @@ component {
 		variables.redis = extendCFRedis(arguments.redis);
 		variables.prefix = arguments.prefix;
 		variables.request_key = arguments.request_key;
-		variables.TTL = 60*60; //same default as sidecar
+		variables.TTL = 60 * 60; //same default as sidecar
 
 		variables.redlock = new redlock([redis], {
 				retryCount: 2,
@@ -30,7 +30,7 @@ component {
 		return prefix & sessionID & "_lock";
 	}
 
-	function setTTL( required numeric ttlSeconds ){
+	function setTTL (required numeric ttlSeconds){
 		variables.TTL = ttlSeconds;
 		return this;
 	}
@@ -40,22 +40,22 @@ component {
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
 			result = redis.del(prefix & sessionID);
-			structDelete( request, variables.request_key );
+			structDelete(request, variables.request_key);
 			lock.unlock();
 		});
 		return result;
 	}
 
 	//this function is used to make sure we only read from redis once per request
-	private function ensureCachedInRequest(required string sessionID){
-		if ( !structKeyExists(request, variables.request_key) ){
+	private function ensureCachedInRequest (required string sessionID){
+		if (!structKeyExists(request, variables.request_key)) {
 			request[variables.request_key] = getEntireSession(sessionID);
 		}
 	}
 
 	function get (required string sessionID, required string key, any defaultValue) {
 		ensureCachedInRequest(sessionID);
-		if ( structKeyExists( request[variables.request_key], key ) ){
+		if (structKeyExists(request[variables.request_key], key)) {
 			return request[variables.request_key][key];
 		}
 		if (!isNull(defaultValue)) {
@@ -66,13 +66,13 @@ component {
 
 	function has (required string sessionID, required string key) {
 		ensureCachedInRequest(sessionID);
-		return structKeyExists( request[variables.request_key], key );
+		return structKeyExists(request[variables.request_key], key);
 	}
 
 	function clear (required string sessionID, required string key) {
 		//clear it from the request cache
 		ensureCachedInRequest(sessionID);
-		structDelete( request[variables.request_key], key );
+		structDelete(request[variables.request_key], key);
 		//write session to redis
 		return setEntireSession(sessionID);
 	}
@@ -82,10 +82,10 @@ component {
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
 			var data = redis.get(prefix & sessionID);
-			if ( data == "" ){
+			if (data == "") {
 				result = { 'cookie': getSessionCookie() };
-			}else{
-				result = deserializeJson( data );
+			} else {
+				result = deserializeJson(data);
 			}
 			lock.unlock();
 		});
@@ -96,7 +96,7 @@ component {
 		var result = false;
 		redlock.lock(getLockName(sessionID), 200, function(err, lock) {
 			if (len(err)) throw(err);
-			result = redis.set(prefix & sessionID, serializeJson( request[variables.request_key] ));
+			result = redis.set(prefix & sessionID, serializeJson(request[variables.request_key]));
 			//express-session uses Redis TTL instead of manually purging
 			redis.expire(prefix & sessionID, variables.TTL);
 			lock.unlock();
@@ -164,66 +164,6 @@ component {
 		}
 
 		return arrayLen(keys);
-	}
-
-	private function __zrem_fixed (key, member) {
-
-		if (!isArray(member)) {
-			member = [member];
-		}
-
-		var conn = getResource();
-		var result = conn.zrem(JavaCast("string", key), JavaCast("string[]", member));
-
-		returnResource(conn);
-
-		if (isNull(result)) {
-			result = 0;
-		}
-
-		return result;
-	}
-
-	private function __hgetReturnsUndefined (string key, string field) {
-		var conn = getResource();
-		var result = conn.hget(JavaCast("string", key), JavaCast("string", field));
-
-		returnResource(conn);
-
-		if (!isNull(result)) {
-			return result;
-		}
-
-		return JavaCast("null", "");
-	}
-
-	private function __inject (required string name, required any f, required boolean isPublic) {
-		if (isPublic) {
-			this[name] = f;
-			variables[name] = f;
-		} else {
-			variables[name] = f;
-		}
-	}
-
-	private function __cleanup () {
-		structDelete(variables, "__inject");
-		structDelete(this, "__inject");
-		structDelete(variables, "__cleanup");
-		structDelete(this, "__cleanup");
-	}
-
-	private function extendCFRedis (required target) {
-		//write the injector first
-		target["__inject"] = variables["__inject"];
-		target["__cleanup"] = variables["__cleanup"];
-
-		target.__inject("zrem_fixed", variables["__zrem_fixed"], true);
-		target.__inject("hgetReturnsUndefined", variables["__hgetReturnsUndefined"], true);
-
-		target.__cleanup();
-
-		return target;
 	}
 
 }
